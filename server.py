@@ -1,76 +1,56 @@
 from bottle import Bottle, run, template, request, response
-import student
+import user
 
 app=Bottle()
 
-reg_students = [];
-reg_students.append(student.Student('andre'))
 
-reg_admins = [];
+reg_users = {"1234" : "andre", "349857" : "miguel"}
 
 @app.route('/')
 def home():
-	return template("""<style>
-                            button{
-                            width: 150;
-                            height: 60;
-                            display:inline-block;
-                            }
-                        </style>
-                        <body>
-                        <center>
-                            <h1>Register</h1>
-                            <button onclick="onClick()"><h3>Administrator</h3></button>
-                            <button onclick="onClick()"><h3>Student</h3></button>
-                            <script>
-                                function onClick() {
-                                document.location.href = 'http://localhost:8080/student';
-                                }
-                            </script>
-                            <h1>Login</h1>
-                            <button onclick="onClick()"><h3>Administrator</h3></button>
-                            <button onclick="onClick()"><h3>Student</h3></button>
-                            <script>
+	return template(
 
-                            </script>
-                        </center>
-                        </body>""")
+    """<center><h1>Login</h1>
+                              <form name="login_form" method="post">
+                                Username:<br>
+                                <input name="username" type="text" />
+                              </form>
+                              <button onclick="send_form()">Login</button>
+                                <script>
+                                    function send_form() {
+                                        document.login_form.submit();
+                                    }
+                                </script>
+                        </center>""")
 
-@app.route('/admin')
-def admin():
-    return
-
-@app.get('/student')
-def login_form():
-    return '''<center><h1>Student</h1>
-              <form method="POST" action="/student">
-                Username:<br>
-                <input name="username" type="text" />
-                <input type="submit" />
-              </form>
-              </center>'''
-
-@app.post('/student')
-def submit_form():
+@app.post('/')
+def login():
     username = request.forms.get('username')
-    print username
 
-    if reg_students == []:
-        reg_students.append(student.Student(username))
-        return ''
+    if len(reg_users) == 0:
+        new_user = user.User(username)
+        reg_users[new_user.getId()] = new_user.getUsername()
+        return template(""" <ul>
+                   %for id, name in list:
+                    <li>{{(name, id)}}</li>
+                   %end
+                </ul>""", list=reg_users.items())
 
-    for i in reg_students:
-        if username == i.username:
+    for name in reg_users.values():
+        #import pdb; pdb.set_trace()
+        if username == name:
             response.status = 303
             response.set_header('Location', '/student')
             return
-        else:
-            reg_students.append(student.Student(username))
-            return template(""" <ul>
-                   %for name in list:
-                    <li>{{name}}</li>
-                   %end
-                </ul>""", list=reg_students)
+
+    new_user = user.User(username)
+    reg_users[new_user.getId()] = new_user.getUsername()
+    return template(""" <ul>
+           %for name in list:
+            <li>{{name}}</li>
+           %end
+        </ul>""", list=reg_users)
+
 
 
 if __name__ == '__main__':

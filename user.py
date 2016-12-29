@@ -1,4 +1,6 @@
-class Student:
+import hashlib
+
+class User:
 
     def __init__(self, username):
         self.username = username
@@ -9,3 +11,6 @@ class Student:
 
     def getId(self):
         return self.id
+
+    def getUsername(self):
+        return  self.username
