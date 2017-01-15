@@ -150,9 +150,30 @@ def login():
 def user(userid):
     _id = int(userid)
     if _id in reg_users:
-        return userLoggedInTemplate("", reg_users[_id])
+        return userLoggedInTemplate(reg_users[_id])
     else:
         return "no such user"
+
+
+@app.get('/listrooms')
+def listrooms():
+    return """
+        [
+            { 
+                "name":"teste1",
+                "building":"torre norte",
+                "campus":"alameda",
+                "occupancy":"0",
+                "capacity":"20"
+            },
+            { 
+                "name":"teste2",
+                "building":"torre sul",
+                "campus":"tagus",
+                "occupancy":"10",
+                "capacity":"30"
+            }
+        ]"""
 
 
 @app.route('/admin')
@@ -161,8 +182,8 @@ def admin():
 
 
 
-def userLoggedInTemplate(user, userscript):
-    return ""
+def userLoggedInTemplate(user):
+    return template(usertemplate, username=user.username)
 
 
 def adminLoggedInTemplate(adminscript):

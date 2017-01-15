@@ -4,13 +4,55 @@
         <script>
 
 
-
             function clearContainer(){
                 document.getElementById("maincontainer").innerHTML = "";
             }
 
             function listRooms(){
-                document.getElementById("maincontainer").innerHTML = "lista de salas";
+                var xhttp = new XMLHttpRequest();
+                xhttp.onreadystatechange = function() {
+                    if (this.readyState == 4 && this.status == 200) {
+
+                        rooms = JSON.parse(this.responseText);
+
+
+                        content = '\
+                            <div class="table-responsive" id="roomtablecont">\
+                                <table class="table table-striped">\
+                                    <thead>\
+                                        <tr>\
+                                            <th>Name</th>\
+                                            <th>Building</th>\
+                                            <th>Campus</th>\
+                                            <th>Occupancy</th>\
+                                            <th>Capacity</th>\
+                                        </tr>\
+                                    </thead>\
+                                    <tbody>\
+                       ';
+
+                        for (var i=0; i<rooms.length; i++){
+                           var room = rooms[i];
+
+
+                           content = content + '\
+                                        <tr>\
+                                            <td>'+room.name+'</td>\
+                                            <td>'+room.building+'</td>\
+                                            <td>'+room.campus+'</td>\
+                                            <td>'+room.occupancy+'</td>\
+                                            <td>'+room.capacity+'</td>\
+                                        </tr>'
+                        }
+
+                        content = content + '</tbody> </table> </div>';
+
+
+                        document.getElementById("maincontainer").innerHTML = content;
+                    }
+                };
+                xhttp.open("GET", "/listrooms", true);
+                xhttp.send(); 
             } 
 
             function userFeed(){
@@ -22,7 +64,7 @@
     </head>
     <body>
 
-	<div class="container">
+    <div class="container">
 
       <!-- Static navbar -->
       <nav class="navbar navbar-default">
@@ -39,7 +81,7 @@
           <div id="navbar" class="navbar-collapse collapse">
             <ul class="nav navbar-nav">
               <li class="active"><a href="#" onclick="userFeed()">Feed</a></li>
-              <li><a href="#" onclick="listRooms()">Rooms</a></li>
+              <li class="active"><a href="#" onclick="listRooms()">Rooms</a></li>
             </ul>
           </div><!--/.nav-collapse -->
         </div><!--/.container-fluid -->
