@@ -11,11 +11,17 @@ Consoante a resposta recebida pelo browser, este corre uma tarefa/função espec
 
 from bottle import Bottle, run, template, request
 from user import User
+import base64
 
 app = Bottle()
 
 # Dict com utilizadores registados, para teste
-reg_users = {User("andre"), User("miguel")}
+reg_users = dict()
+andre = User("andre")
+miguel = User("miguel")
+
+reg_users[andre.id] = andre
+reg_users[miguel.id] = miguel
 
 
 # Index, o que aparece no browser quando se acede ao servidor
@@ -31,12 +37,12 @@ def home():
             <!--COMMENT: Script JS, responsável por tudo o que é dinâmico-->
             <script>
 
-                <!--COMMENT: Função que submete para o servidor o username inserido e faz o login ou registo-->
-                <!--COMMENT: Recebe como argumento "reg" ou "log", dependendo do botao clicado-->
+                // Função que submete para o servidor o username inserido e faz o login ou registo
+                //  Recebe como argumento "reg" ou "log", dependendo do botao clicado
 
                 function submit(mode) {
 
-                    <!--COMMENT: str guarda o username introduzido, do respectivo campo login/registo-->
+                    // str guarda o username introduzido, do respectivo campo login/registo-->
 
                     if(mode=="reg"){
                         var str = document.getElementById("username_reg").value;
@@ -46,40 +52,24 @@ def home():
 
                     var xmlhttp = new XMLHttpRequest();
 
-                    <!--COMMENT: Espera pela resposta. Quando é recebida, corre a função, e faz o que tem a fazer de acordo com a resposta recebida-->
+                    //Espera pela resposta. Quando é recebida, corre a função, e faz o que tem a fazer de acordo com a resposta recebida
 
                     xmlhttp.onreadystatechange = function() {
 
                         if (this.readyState == 4 && this.status == 200) {
 
-                            <!--COMMENT: Divide a resposta do servidor em username e id-->
+                            //Divide a resposta do servidor em username e id
 
                             var response = xmlhttp.responseText.split(",");
-                            username = response[0];
-                            id = response[1];
-
-                            <!--COMMENT: Nome de registo invalido, retorna mensagem de alerta-->
-
-                            if(username == "invalid_reg"){
-                                window.alert("Username already taken. Please choose another one.");
-
-                            <!--COMMENT: Nome de login invalido, retorna mensagem de alerta-->
-
-                            }else if(username == "invalid_log"){
-                                window.alert("User not registered.");
-
-                            <!--COMMENT: Caso tudo corra bem, no registo, sao apresentados o nome e id que foram registados-->
-                            <!--COMMENT: Caso tudo corra bem, no login, username e id sao armazenados numa cookie e a pagina é redireccionada para a página de login-->
-
-                            }else{
-                                if(mode=="reg"){
-                                    document.getElementById("register").innerHTML = response
+                            if (response != "0") {
+                                window.location = "/user/"+response
+                            } else {
+                                window.location = "/admin"
                             }
                         }
                     }
 
-                    <!--COMMENT: Envia o nome introduzido e o modo (log ou reg) para o servidor (app.post('/'))-->
-
+                    // Envia o nome introduzido e o modo (log ou reg) para o servidor (app.post('/'))
                     xmlhttp.open("POST", "/", true);
                     xmlhttp.send("data="+str+","+mode);
                 }
@@ -104,35 +94,27 @@ def home():
         """)
 
 
-def userLoggedInTemplate(user):
-    return template("""
-
-            TEMPLATE {} {}
-
-    """.format(user.username, user.id))
 
 
-def adminLoggedInTemplate():
-    return template("""
 
-            TEMPLATE {} {}
+def encodeID(id):
+    return base64.standard_b64encode(str(id).encode('utf-8'))
 
-    """.format('admin', 0))
-
-
+def decodeID(encodedid):
+    return int(base64.standard_b64decode(encodedid))
 
 @app.post('/')
 def login():
     # Dados enviados pelo browser
     # Divididos em username e mode (reg ou log)
+
     data = request.forms.get('data').split(",")
     username = data[0]
     mode = data[1]
 
-    # import pdb; pdb.set_trace()
     # Se o user for admin, retorna com id 0
     if username == "admin":
-        return adminLoggedInTemplate()
+        return "0"
 
     # REG - Se nao houver ninguém registado, cria novo utilizador, e regista-o
     # LOG - Se não houver ninguém registado, impossível fazer login
@@ -140,7 +122,7 @@ def login():
         if mode == "reg":
             new_user = User(username)
             reg_users[new_user.id] = new_user
-            return userLoggedInTemplate(new_user)
+            return str(new_user.id)
         elif mode == "log":
             return "invalid_log"
 
@@ -149,7 +131,7 @@ def login():
     for id, user in reg_users.items():
         if username == user.username:
             if mode == "log":
-                return userLoggedInTemplate(user)
+                return str(id)
             elif mode == "reg":
                 return "invalid_reg"
 
@@ -160,7 +142,61 @@ def login():
     elif mode == "reg":
         new_user = User(username)
         reg_users[new_user.id] = new_user
-        return userLoggedInTemplate(new_user)
+        return str(new_user.id)
+
+
+@app.route('/user/<userid>')
+def user(userid):
+    _id = int(userid)
+    if _id in reg_users:
+        return userLoggedInTemplate("", reg_users[_id])
+    else:
+        return "no such user"
+
+
+@app.route('/admin')
+def admin():
+    return adminLoggedInTemplate("")
+
+
+
+def userLoggedInTemplate(user, userscript):
+    return template("""
+            <html>
+                <head>
+                    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous"> 
+                    <script src="jquery-3.1.1.min.js"></script>
+                    <script>
+                        {}
+                    </script>
+                </head>
+                <body>
+
+                    TEMPLATE {} {}
+
+                </body>
+            </html>
+    """.format(userscript, user.username, user.id))
+
+
+def adminLoggedInTemplate(adminscript):
+     return template("""
+            <html>
+                <head>
+                    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+                    <script src="jquery-3.1.1.min.js"></script>
+                    <script>
+                        {}
+                    </script>
+                </head>
+                <body>
+
+                    TEMPLATE {} {}
+
+                </body>
+            </html>
+    """.format(adminscript, 'admin', 0))
+
 
 
 if __name__ == '__main__':
