@@ -19,6 +19,10 @@ app = Bottle()
 reg_users = dict()
 andre = User("andre")
 miguel = User("miguel")
+usertemplate = ""
+
+with open("user_template.st", "r") as f:
+    usertemplate = f.read()
 
 reg_users[andre.id] = andre
 reg_users[miguel.id] = miguel
@@ -94,9 +98,6 @@ def home():
         """)
 
 
-
-
-
 def encodeID(id):
     return base64.standard_b64encode(str(id).encode('utf-8'))
 
@@ -161,42 +162,11 @@ def admin():
 
 
 def userLoggedInTemplate(user, userscript):
-    return template("""
-            <html>
-                <head>
-                    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous"> 
-                    <script src="jquery-3.1.1.min.js"></script>
-                    <script>
-                        {}
-                    </script>
-                </head>
-                <body>
-
-                    TEMPLATE {} {}
-
-                </body>
-            </html>
-    """.format(userscript, user.username, user.id))
+    return ""
 
 
 def adminLoggedInTemplate(adminscript):
-     return template("""
-            <html>
-                <head>
-                    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
-                    <script src="jquery-3.1.1.min.js"></script>
-                    <script>
-                        {}
-                    </script>
-                </head>
-                <body>
-
-                    TEMPLATE {} {}
-
-                </body>
-            </html>
-    """.format(adminscript, 'admin', 0))
-
+    return ""
 
 
 if __name__ == '__main__':
