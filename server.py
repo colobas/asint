@@ -11,7 +11,7 @@ Consoante a resposta recebida pelo browser, este corre uma tarefa/função espec
 
 from bottle import Bottle, run, template, request
 from user import User
-import base64
+import base64, requests
 
 app = Bottle()
 
@@ -31,6 +31,7 @@ reg_users[miguel.id] = miguel
 # Index, o que aparece no browser quando se acede ao servidor
 @app.route('/')
 def home():
+    listFloors("Alameda", "Torre Norte")
     return template(
         """
         <!--COMMENT: Tudo o que está em HTML é estático. São os elementos que aparecem no browser-->
@@ -98,11 +99,61 @@ def home():
         """)
 
 
-def encodeID(id):
-    return base64.standard_b64encode(str(id).encode('utf-8'))
+def listCampus():
+    r = requests.get("https://fenix.tecnico.ulisboa.pt/api/fenix/v1/spaces")
+    response = r.json()
+    output = []
 
-def decodeID(encodedid):
-    return int(base64.standard_b64decode(encodedid))
+    for i in range(0, len(response)):
+        output.append(response[i]["name"])
+    return output
+
+
+def getCampusID(name):
+    r = requests.get("https://fenix.tecnico.ulisboa.pt/api/fenix/v1/spaces")
+    response = r.json()
+    if name == "Alameda":
+        return response[0]["id"]
+    elif name == "Nuclear":
+        return response[1]["id"]
+    elif name == "Tagus":
+        return response[2]["id"]
+    else:
+        return "Ivalid campus name"
+
+
+def listBuildings(campus):
+    campus_id = getCampusID(campus)
+    r = requests.get("https://fenix.tecnico.ulisboa.pt/api/fenix/v1/spaces/"+campus_id)
+    response = r.json()
+    output = []
+
+    for i in range(0, len(response["containedSpaces"])):
+        output.append(response["containedSpaces"][i]["name"])
+    return output
+
+
+def getBuildingID(campus, buildingName):
+    campus_id = getCampusID(campus)
+    r = requests.get("https://fenix.tecnico.ulisboa.pt/api/fenix/v1/spaces/"+campus_id)
+    response = r.json()
+
+    for i in range(0, len(response["containedSpaces"])):
+        if response["containedSpaces"][i]["name"] == buildingName:
+            return(response["containedSpaces"][i]["id"])
+    return "Invalid building name"
+
+
+def listFloors(campus, buildingName):
+    building_id = getBuildingID(campus, buildingName)
+    r = requests.get("https://fenix.tecnico.ulisboa.pt/api/fenix/v1/spaces/" + building_id)
+    response = r.json()
+    output = []
+
+    for i in range(0, len(response["containedSpaces"])):
+        output.append(response["containedSpaces"][i]["name"])
+    print(output)
+
 
 @app.post('/')
 def login():
