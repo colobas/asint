@@ -15,7 +15,7 @@ from user import User
 app = Bottle()
 
 # Dict com utilizadores registados, para teste
-reg_users = {"1234": "andre", "349857": "miguel"}
+reg_users = {User("andre"), User("miguel")}
 
 
 # Index, o que aparece no browser quando se acede ao servidor
@@ -73,18 +73,14 @@ def home():
 
                             }else{
                                 if(mode=="reg"){
-                                    document.getElementById("register").innerHTML = "Registered as " + username + "<br>ID: " + id;
-                                }else{
-                                    document.cookie = response;
-                                    window.location = "/login"
-                                }
+                                    document.getElementById("register").innerHTML = response
                             }
                         }
                     }
 
                     <!--COMMENT: Envia o nome introduzido e o modo (log ou reg) para o servidor (app.post('/'))-->
 
-                    xmlhttp.open("POST", "", true);
+                    xmlhttp.open("POST", "/", true);
                     xmlhttp.send("data="+str+","+mode);
                 }
 
@@ -108,9 +104,25 @@ def home():
         """)
 
 
-@app.post('/')
-def home():
+def userLoggedInTemplate(user):
+    return template("""
 
+            TEMPLATE {} {}
+
+    """.format(user.username, user.id))
+
+
+def adminLoggedInTemplate():
+    return template("""
+
+            TEMPLATE {} {}
+
+    """.format('admin', 0))
+
+
+
+@app.post('/')
+def login():
     # Dados enviados pelo browser
     # Divididos em username e mode (reg ou log)
     data = request.forms.get('data').split(",")
@@ -120,85 +132,35 @@ def home():
     # import pdb; pdb.set_trace()
     # Se o user for admin, retorna com id 0
     if username == "admin":
-        return "admin,0"
+        return adminLoggedInTemplate()
 
     # REG - Se nao houver ninguém registado, cria novo utilizador, e regista-o
     # LOG - Se não houver ninguém registado, impossível fazer login
     if len(reg_users) == 0:
         if mode == "reg":
             new_user = User(username)
-            reg_users[new_user.getId()] = new_user.getUsername()
-            return new_user.getUsername() + "," + new_user.getId()
+            reg_users[new_user.id] = new_user
+            return userLoggedInTemplate(new_user)
         elif mode == "log":
             return "invalid_log"
 
     # REG - Caso existam users registados, se o nome introduzido já existir, impossível registar
     # LOG - Se o nome introduzido já estiver registado, devolve username e id.
-    for key, value in reg_users.items():
-        if username == value:
+    for id, user in reg_users.items():
+        if username == user.username:
             if mode == "log":
-                return value + "," + key
+                return userLoggedInTemplate(user)
             elif mode == "reg":
                 return "invalid_reg"
 
     # LOG - Se o nome introduzido não estiver registado, impossível fazer login
     if mode == "log":
         return "invalid_log"
-
     # REG - Se o nome introduzido não estiver registado, regista-o e devolve username e id
     elif mode == "reg":
         new_user = User(username)
-        reg_users[new_user.getId()] = new_user.getUsername()
-        return new_user.getUsername() + "," + new_user.getId()
-
-
-@app.route('/login')
-def login():
-    return template("""
-        <html>
-            <head>
-                    <p id="login"></p>
-                <center>
-                    <h1 id="admin" style="display: none">Admin</h1>
-                    <h1 id="student" style="display: none">Student</h1>
-
-                </center>
-
-                <script>
-
-                    var data = document.cookie.split(",");
-                    username = data[0];
-                    id = data[1];
-
-                    document.getElementById("login").innerHTML = "Logged in as " + username + "<br>ID: " + id;
-
-                    function display_(id, displayValue){
-                        if ( displayValue == 1 ) {
-                            document.getElementById(id).style.display = 'block';
-                        } else if ( displayValue == 0 ) {
-                            document.getElementById(id).style.display = 'none';
-                        }
-                    }
-
-                    if(username == 'admin'){
-                        display_('admin', 1);
-                    }else{
-                        display_('student', 1);
-                    }
-
-
-                </script>
-            </head>
-            <body>
-
-            </body>
-        </html>
-        """)
-
-
-@app.post('/login')
-def login():
-    return
+        reg_users[new_user.id] = new_user
+        return userLoggedInTemplate(new_user)
 
 
 if __name__ == '__main__':

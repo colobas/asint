@@ -12,9 +12,14 @@ class User:
     def __str__(self):
         return '\n[Username: {}, ID: {}]'.format(self.username, self.id)
 
-    def getId(self):
-        return self.id
+    def __eq__(self, other):
+        if other == None:
+            return False
+        elif other.id != self.id:
+            return False
+        elif other.username != self.username:
+            return False
+        return True
 
-    def getUsername(self):
-        return  self.username
-
+    def __hash__(self):
+        return id
