@@ -10,7 +10,7 @@ Consoante a resposta recebida pelo browser, este corre uma tarefa/função espec
 """
 
 from bottle import Bottle, run, template, request
-import user
+from user import User
 
 app = Bottle()
 
@@ -126,7 +126,7 @@ def home():
     # LOG - Se não houver ninguém registado, impossível fazer login
     if len(reg_users) == 0:
         if mode == "reg":
-            new_user = user.User(username)
+            new_user = User(username)
             reg_users[new_user.getId()] = new_user.getUsername()
             return new_user.getUsername() + "," + new_user.getId()
         elif mode == "log":
@@ -147,7 +147,7 @@ def home():
 
     # REG - Se o nome introduzido não estiver registado, regista-o e devolve username e id
     elif mode == "reg":
-        new_user = user.User(username)
+        new_user = User(username)
         reg_users[new_user.getId()] = new_user.getUsername()
         return new_user.getUsername() + "," + new_user.getId()
 
