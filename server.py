@@ -195,7 +195,7 @@ def getRoomCapacity(campus, buildingName, floor, room):
     r = requests.get("https://fenix.tecnico.ulisboa.pt/api/fenix/v1/spaces/" + room_id)
     response = r.json()
 
-    print(response["capacity"]["normal"])
+    return response["capacity"]["normal"]
 
 
 @app.post('/')
