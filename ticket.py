@@ -2,8 +2,8 @@ import time
 
 class Ticket:
 
-    def __init__ (self, roomid, username):
+    def __init__ (self, roomid, user):
         self.roomid=roomid
         self.time=time.time()
-        self.username=username.id
+        self.user=user.id
 

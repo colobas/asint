@@ -12,6 +12,9 @@ Consoante a resposta recebida pelo browser, este corre uma tarefa/função espec
 from bottle import Bottle, run, template, request
 from user import User
 import base64, requests
+from room import Room
+from ticket import Ticket
+import json
 
 app = Bottle()
 
@@ -19,19 +22,31 @@ app = Bottle()
 reg_users = dict()
 andre = User("andre")
 miguel = User("miguel")
-usertemplate = ""
-
-with open("user_template.st", "r") as f:
-    usertemplate = f.read()
 
 reg_users[andre.id] = andre
 reg_users[miguel.id] = miguel
+
+rooms = dict()
+room1 = Room(12,"sala1", "alameda", "edificio1", "10", "4")
+room2 = Room(13,"sala2", "tagus", "edificio2", "12", "2")
+rooms[room1.id] = room1
+rooms[room2.id] = room2
+
+tickets = dict()
+ticket1 = Ticket(12, andre)
+ticket2 = Ticket(13, miguel)
+tickets[0] = ticket1
+tickets[1] = ticket2
+
+
+usertemplate = ""
+with open("user_template.st", "r") as f:
+    usertemplate = f.read()
 
 
 # Index, o que aparece no browser quando se acede ao servidor
 @app.route('/')
 def home():
-    getRoomCapacity("Alameda", "Torre Norte", "-1", "E4")
     return template(
         """
         <!--COMMENT: Tudo o que está em HTML é estático. São os elementos que aparecem no browser-->
@@ -251,42 +266,48 @@ def user(userid):
 
 @app.get('/listrooms')
 def listrooms():
-    return """
-        [
-            { 
-                "name":"teste1",
-                "building":"torre norte",
-                "campus":"alameda",
-                "occupancy":"0",
-                "capacity":"20",
-                "id":"123"
-            },
-            { 
-                "name":"teste2",
-                "building":"torre sul",
-                "campus":"tagus",
-                "occupancy":"10",
-                "capacity":"30",
-                "id":"345"
-            }
-        ]"""
+
+    response = "["
+
+    for room in rooms.values():
+        response += """
+            {{
+                "name":"{}",
+                "building":"{}",
+                "campus":"{}",
+                "occupancy":"{}",
+                "capacity":"{}",
+                "id":"{}"
+            }},
+        """.format(room.name, room.building, room.campus, room.occupancy, room.capacity, room.id)
+
+    response = response[:-10]+ "]"
+    return response
 
 @app.get('/room/<roomid>')
-def room(roomid):
+def roomview(roomid):
+    _roomid = int(roomid)
+    room = rooms[_roomid] # TODO: criar dicionario rooms
+    users = "[ "
+
+    for ticket in tickets.values(): # TODO: criar dicionario tickets
+        if ticket.roomid == _roomid:
+            users += '{{"username":"{}"}},'.format(reg_users[ticket.user].username)
+
+    users = users[:-1] + "]"
+
+    print(users)
+
     return """
-            { 
-                "name":"teste1",
-                "building":"torre norte",
-                "campus":"alameda",
-                "occupancy":"0",
-                "capacity":"20",
-                "users":[
-                    {"username":"miguel"},
-                    {"username":"andre"},
-                    {"username":"reilobas"}
-                ]
-            }
-        """
+            {{
+                "name":"{}",
+                "building":"{}",
+                "campus":"{}",
+                "occupancy":"{}",
+                "capacity":"{}",
+                "users":{}
+            }}
+        """.format(room.name, room.building, room.campus, room.occupancy, room.capacity, users)
 
 @app.route('/admin')
 def admin():
