@@ -99,6 +99,8 @@ def home():
         """)
 
 
+# Funcoes admin <--> fenix
+
 def listCampus():
     r = requests.get("https://fenix.tecnico.ulisboa.pt/api/fenix/v1/spaces")
     response = r.json()
