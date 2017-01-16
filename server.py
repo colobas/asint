@@ -31,7 +31,7 @@ reg_users[miguel.id] = miguel
 # Index, o que aparece no browser quando se acede ao servidor
 @app.route('/')
 def home():
-    listFloors("Alameda", "Torre Norte")
+    getRoomCapacity("Alameda", "Torre Norte", "-1", "E4")
     return template(
         """
         <!--COMMENT: Tudo o que está em HTML é estático. São os elementos que aparecem no browser-->
@@ -99,6 +99,8 @@ def home():
         """)
 
 
+# Funcoes admin <--> fenix
+
 def listCampus():
     r = requests.get("https://fenix.tecnico.ulisboa.pt/api/fenix/v1/spaces")
     response = r.json()
@@ -152,7 +154,48 @@ def listFloors(campus, buildingName):
 
     for i in range(0, len(response["containedSpaces"])):
         output.append(response["containedSpaces"][i]["name"])
-    print(output)
+    return output
+
+
+def getFloorID(campus, buildingName, floor):
+    building_id = getBuildingID(campus, buildingName)
+    r = requests.get("https://fenix.tecnico.ulisboa.pt/api/fenix/v1/spaces/" + building_id)
+    response = r.json()
+
+    for i in range(0, len(response["containedSpaces"])):
+        if response["containedSpaces"][i]["name"] == floor:
+            return response["containedSpaces"][i]["id"]
+    return "Invalid floor"
+
+
+def listRooms(campus, buildingName, floor):
+    floor_id = getFloorID(campus, buildingName, floor)
+    r = requests.get("https://fenix.tecnico.ulisboa.pt/api/fenix/v1/spaces/" + floor_id)
+    response = r.json()
+    output = []
+
+    for i in range(0, len(response["containedSpaces"])):
+        output.append(response["containedSpaces"][i]["name"])
+    return output
+
+
+def getRoomID(campus, buildingName, floor, room):
+    floor_id = getFloorID(campus, buildingName, floor)
+    r = requests.get("https://fenix.tecnico.ulisboa.pt/api/fenix/v1/spaces/" + floor_id)
+    response = r.json()
+
+    for i in range(0, len(response["containedSpaces"])):
+        if response["containedSpaces"][i]["name"] == room:
+            return response["containedSpaces"][i]["id"]
+    return "Invalid room"
+
+
+def getRoomCapacity(campus, buildingName, floor, room):
+    room_id = getRoomID(campus, buildingName, floor, room)
+    r = requests.get("https://fenix.tecnico.ulisboa.pt/api/fenix/v1/spaces/" + room_id)
+    response = r.json()
+
+    return response["capacity"]["normal"]
 
 
 @app.post('/')
