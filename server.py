@@ -215,17 +215,35 @@ def listrooms():
                 "building":"torre norte",
                 "campus":"alameda",
                 "occupancy":"0",
-                "capacity":"20"
+                "capacity":"20",
+                "id":"123"
             },
             { 
                 "name":"teste2",
                 "building":"torre sul",
                 "campus":"tagus",
                 "occupancy":"10",
-                "capacity":"30"
+                "capacity":"30",
+                "id":"345"
             }
         ]"""
 
+@app.get('/room/<roomid>')
+def room(roomid):
+    return """
+            { 
+                "name":"teste1",
+                "building":"torre norte",
+                "campus":"alameda",
+                "occupancy":"0",
+                "capacity":"20",
+                "users":[
+                    {"username":"miguel"},
+                    {"username":"andre"},
+                    {"username":"reilobas"}
+                ]
+            }
+        """
 
 @app.route('/admin')
 def admin():

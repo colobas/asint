@@ -8,7 +8,40 @@
                 document.getElementById("maincontainer").innerHTML = "";
             }
 
+            function showRoom(roomid){
+                clearContainer();
+                var xhttp = new XMLHttpRequest();
+                xhttp.onreadystatechange = function() {
+                    if (this.readyState == 4 && this.status == 200) {
+                        room = JSON.parse(this.responseText);
+                        content = '\
+                            <h1>'+room.name+'</h1>\
+                            <h2>'+room.campus+'</h2>\
+                            <h2>'+room.building+'</h2>\
+                            <h2> Occupancy:'+room.occupancy+'</h2>\
+                            <h2> Capacity:'+room.capacity+'</h2>\
+                            <button type="button" class="btn btn-lg btn-default">Check In</button>\
+                            <div class="table-responsive" id="roomuserscont">\
+                                <table class="table table-condensed">\
+                                    <tr>\
+                                        <th><h2>Users</h2></th>\
+                                    </tr>\
+                                    <tbody>';
+
+                        for (var i=0; i<room.users.length; i++) {
+                           content = content + '<tr><td>'+room.users[i].username+'</td></tr>';
+                        }
+
+                        content = content + '</tbody> </table> </div>';
+                    }
+                    document.getElementById("maincontainer").innerHTML = content;
+                };
+                xhttp.open("GET", "/room/"+roomid, true);
+                xhttp.send();
+            }
+
             function listRooms(){
+                clearContainer();
                 var xhttp = new XMLHttpRequest();
                 xhttp.onreadystatechange = function() {
                     if (this.readyState == 4 && this.status == 200) {
@@ -37,7 +70,7 @@
 
                            content = content + '\
                                         <tr>\
-                                            <td>'+room.name+'</td>\
+                                            <td><a href="#" onclick="showRoom('+room.id+')">'+room.name+'</a></td>\
                                             <td>'+room.building+'</td>\
                                             <td>'+room.campus+'</td>\
                                             <td>'+room.occupancy+'</td>\
@@ -46,14 +79,12 @@
                         }
 
                         content = content + '</tbody> </table> </div>';
-
-
                         document.getElementById("maincontainer").innerHTML = content;
                     }
                 };
                 xhttp.open("GET", "/listrooms", true);
                 xhttp.send(); 
-            } 
+            }
 
             function userFeed(){
                 document.getElementById("maincontainer").innerHTML = "história de utilizacao";
