@@ -11,7 +11,7 @@ Consoante a resposta recebida pelo browser, este corre uma tarefa/função espec
 
 from bottle import Bottle, run, template, request
 from user import User
-import base64, requests
+import base64, requests, hashlib
 from room import Room
 from ticket import Ticket
 import json
@@ -39,6 +39,31 @@ tickets[0] = ticket1
 tickets[1] = ticket2
 
 
+
+def add_room(campus, building, floor, room_name):
+    sha1 = hashlib.sha1()
+    sha1.update(room_name.encode('utf-8'))
+    digest = sha1.hexdigest()[0:5]
+    room_id = int(digest, 16)
+    capacity = getRoomCapacity(campus, building, floor, room_name)
+    occupancy = 0
+
+    new_room = Room(room_id, room_name, campus, floor, capacity, occupancy)
+    rooms[new_room.id] = new_room
+
+def check_in(user_id, room_name):
+    for key in rooms:
+        if room_name == rooms[key].name:
+            room_id = rooms[key].id
+
+    for key in reg_users.keys():
+        if user_id == key:
+            username = reg_users[key].username
+
+    new_ticket = Ticket(room_id, username)
+    tickets[user_id] = new_ticket
+    print(tickets[772480].username)
+
 usertemplate = ""
 with open("user_template.st", "r") as f:
     usertemplate = f.read()
@@ -47,6 +72,7 @@ with open("user_template.st", "r") as f:
 # Index, o que aparece no browser quando se acede ao servidor
 @app.route('/')
 def home():
+    check_in(772480, "sala1")
     return template(
         """
         <!--COMMENT: Tudo o que está em HTML é estático. São os elementos que aparecem no browser-->
@@ -136,7 +162,7 @@ def getCampusID(name):
     elif name == "Tagus":
         return response[2]["id"]
     else:
-        return "Ivalid campus name"
+        return "Invalid campus name"
 
 
 def listBuildings(campus):
