@@ -19,24 +19,20 @@ import json
 app = Bottle()
 
 # Dict com utilizadores registados, para teste
-reg_users = dict()
+users = dict()
 andre = User("andre")
 miguel = User("miguel")
 
-reg_users[andre.id] = andre
-reg_users[miguel.id] = miguel
+users[andre.id] = andre
+users[miguel.id] = miguel
 
 rooms = dict()
-room1 = Room(12,"sala1", "alameda", "edificio1", "10", "4")
-room2 = Room(13,"sala2", "tagus", "edificio2", "12", "2")
+room1 = Room(12,"sala1", "alameda", "edificio1", 10, 0)
+room2 = Room(13,"sala2", "tagus", "edificio2", 12, 0)
 rooms[room1.id] = room1
 rooms[room2.id] = room2
 
 tickets = dict()
-ticket1 = Ticket(12, andre)
-ticket2 = Ticket(13, miguel)
-tickets[0] = ticket1
-tickets[1] = ticket2
 
 
 usertemplate = ""
@@ -228,17 +224,17 @@ def login():
 
     # REG - Se nao houver ninguém registado, cria novo utilizador, e regista-o
     # LOG - Se não houver ninguém registado, impossível fazer login
-    if len(reg_users) == 0:
+    if len(users) == 0:
         if mode == "reg":
             new_user = User(username)
-            reg_users[new_user.id] = new_user
+            users[new_user.id] = new_user
             return str(new_user.id)
         elif mode == "log":
             return "invalid_log"
 
     # REG - Caso existam users registados, se o nome introduzido já existir, impossível registar
     # LOG - Se o nome introduzido já estiver registado, devolve username e id.
-    for id, user in reg_users.items():
+    for id, user in users.items():
         if username == user.username:
             if mode == "log":
                 return str(id)
@@ -251,15 +247,15 @@ def login():
     # REG - Se o nome introduzido não estiver registado, regista-o e devolve username e id
     elif mode == "reg":
         new_user = User(username)
-        reg_users[new_user.id] = new_user
+        users[new_user.id] = new_user
         return str(new_user.id)
 
 
 @app.route('/user/<userid>')
 def user(userid):
     _id = int(userid)
-    if _id in reg_users:
-        return userLoggedInTemplate(reg_users[_id])
+    if _id in users:
+        return userLoggedInTemplate(users[_id])
     else:
         return "no such user"
 
@@ -275,8 +271,8 @@ def listrooms():
                 "name":"{}",
                 "building":"{}",
                 "campus":"{}",
-                "occupancy":"{}",
-                "capacity":"{}",
+                "occupancy":{},
+                "capacity":{},
                 "id":"{}"
             }},
         """.format(room.name, room.building, room.campus, room.occupancy, room.capacity, room.id)
@@ -284,30 +280,62 @@ def listrooms():
     response = response[:-10]+ "]"
     return response
 
-@app.get('/room/<roomid>')
-def roomview(roomid):
+@app.get('/room/<roomid>/<userid>')
+def roomview(roomid, userid):
     _roomid = int(roomid)
+    _userid = int(userid)
     room = rooms[_roomid] # TODO: criar dicionario rooms
-    users = "[ "
+    _users = "[ "
 
-    for ticket in tickets.values(): # TODO: criar dicionario tickets
+    checkedin = False
+
+
+    for ticket in tickets.values():
         if ticket.roomid == _roomid:
-            users += '{{"username":"{}"}},'.format(reg_users[ticket.user].username)
+            _users += '{{"username":"{}"}},'.format(users[ticket.user].username)
+            if ticket.user == _userid:
+                checkedin = True
 
-    users = users[:-1] + "]"
-
-    print(users)
+    _users = _users[:-1] + "]"
 
     return """
             {{
                 "name":"{}",
                 "building":"{}",
                 "campus":"{}",
-                "occupancy":"{}",
-                "capacity":"{}",
-                "users":{}
+                "occupancy":{},
+                "capacity":{},
+                "users":{},
+                "checkedin":{}
             }}
-        """.format(room.name, room.building, room.campus, room.occupancy, room.capacity, users)
+        """.format(room.name, room.building, room.campus, room.occupancy, room.capacity, _users, "true" if checkedin else "false")
+
+
+@app.get('/checkin/<roomid>/<userid>')
+def checkin(roomid, userid):
+    _userid = int(userid)
+    _roomid = int(roomid)
+
+    if _roomid in rooms and _userid in users:
+        room = rooms[_roomid]
+        if room.occupancy + 1 <= room.capacity:
+            tickets[_userid] = Ticket(_roomid, users[_userid])
+            room.occupancy += 1
+
+    return ""
+
+@app.get('/checkout/<userid>')
+def checkout(userid):
+    _userid = int(userid)
+
+    if _userid in users:
+        if _userid in tickets:
+            room = rooms[tickets[_userid].roomid]
+            room.occupancy -= 1
+            del tickets[_userid]
+
+    return ""
+
 
 @app.route('/admin')
 def admin():
@@ -316,7 +344,7 @@ def admin():
 
 
 def userLoggedInTemplate(user):
-    return template(usertemplate, username=user.username)
+    return template(usertemplate, user=user)
 
 
 def adminLoggedInTemplate(adminscript):

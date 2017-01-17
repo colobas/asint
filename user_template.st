@@ -1,8 +1,28 @@
 <html>
     <head>
+<!-- Latest compiled and minified CSS -->
+        <script src="https://code.jquery.com/jquery-3.1.1.min.js"></script>
         <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+        <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
         <script>
 
+            function checkIn(roomid){
+                var xhttp = new XMLHttpRequest();
+                xhttp.onreadystatechange = function() {
+                    showRoom(roomid);
+                }
+                xhttp.open("GET", "/checkin/"+roomid+"/{{user.id}}", true);
+                xhttp.send();
+            }
+
+            function checkOut(roomid){
+                var xhttp = new XMLHttpRequest();
+                xhttp.onreadystatechange = function() {
+                    showRoom(roomid);
+                }
+                xhttp.open("GET", "/checkout/{{user.id}}", true);
+                xhttp.send();
+            }
 
             function clearContainer(){
                 document.getElementById("maincontainer").innerHTML = "";
@@ -14,29 +34,50 @@
                 xhttp.onreadystatechange = function() {
                     if (this.readyState == 4 && this.status == 200) {
                         room = JSON.parse(this.responseText);
-                        content = '\
-                            <h1>'+room.name+'</h1>\
-                            <h2>'+room.campus+'</h2>\
-                            <h2>'+room.building+'</h2>\
-                            <h2> Occupancy:'+room.occupancy+'</h2>\
-                            <h2> Capacity:'+room.capacity+'</h2>\
-                            <button type="button" class="btn btn-lg btn-default">Check In</button>\
-                            <div class="table-responsive" id="roomuserscont">\
-                                <table class="table table-condensed">\
-                                    <tr>\
-                                        <th><h2>Users</h2></th>\
-                                    </tr>\
-                                    <tbody>';
+                        content = '';
+                        if (!room.checkedin) { 
+                            content = content + '<button align="center" type="button" onclick="checkIn('+roomid+')" class="btn btn-lg btn-default">Check In</button>';
+                        } else {
+                            content = content + '<button align="center" type="button" onclick="checkOut('+roomid+')" class="btn btn-lg btn-default">Check Out</button>';
+                        } 
+                        content = content + '\
+                        <div class="table-responsive">\
+                        <table class="table table-striped">\
+                        <thead>\
+                           <th>Room name</th>\
+                           <th>Campus</th>\
+                           <th>Building</th>\
+                           <th>Occupancy</th>\
+                           <th>Capacity</th>\
+                        </thead>\
+                        <tbody>\
+                        <tr>\
+                            <td>'+room.name+'</td>\
+                            <td>'+room.campus+'</td>\
+                            <td>'+room.building+'</td>\
+                            <td>'+room.occupancy+'</td>\
+                            <td>'+room.capacity+'</td>\
+                        </tr>\
+                        </tbody>\
+                        </table>\
+                        </div>';
 
-                        for (var i=0; i<room.users.length; i++) {
-                           content = content + '<tr><td>'+room.users[i].username+'</td></tr>';
+
+                        if (room.occupancy > 0) {
+                            content = content + '\
+                                    <h3><b>Users</b></h3>\
+                                    <ul>';
+
+                            for (var i=0; i<room.users.length; i++) {
+                               content = content + '<li>'+room.users[i].username+'</li>';
+                            }
+
+                            content = content + '</ul>';
                         }
-
-                        content = content + '</tbody> </table> </div>';
                     }
                     document.getElementById("maincontainer").innerHTML = content;
                 };
-                xhttp.open("GET", "/room/"+roomid, true);
+                xhttp.open("GET", "/room/"+roomid+"/{{user.id}}", true);
                 xhttp.send();
             }
 
@@ -86,17 +127,12 @@
                 xhttp.send(); 
             }
 
-            function userFeed(){
-                document.getElementById("maincontainer").innerHTML = "história de utilizacao";
-            }
-
 
         </script>
     </head>
-    <body>
+    <body onload="listRooms()">
 
     <div class="container">
-
       <!-- Static navbar -->
       <nav class="navbar navbar-default">
         <div class="container-fluid">
@@ -107,24 +143,20 @@
               <span class="icon-bar"></span>
               <span class="icon-bar"></span>
             </button>
-            <a class="navbar-brand" href="#" onclick="clearContainer()">{{username}}</a>
+            <a class="navbar-brand" href="#" onclick="clearContainer()">{{user.username}}</a>
           </div>
           <div id="navbar" class="navbar-collapse collapse">
             <ul class="nav navbar-nav">
-              <li class="active"><a href="#" onclick="userFeed()">Feed</a></li>
               <li class="active"><a href="#" onclick="listRooms()">Rooms</a></li>
             </ul>
           </div><!--/.nav-collapse -->
         </div><!--/.container-fluid -->
       </nav>
-
-
-
       <div class="jumbotron" id="maincontainer">
             historia de utilizacao
       </div> <!-- /container -->
 
-
+    </div>
     </body>
 </html>
 
