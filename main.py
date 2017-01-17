@@ -328,9 +328,10 @@ def checkout(userid):
 
     if userid != None:
         qry = Ticket.query(user=user)
-        if qry > 0:
-            qry[0].room.occupancy -= 1
-            qry[0].key.delete()
+        res = qry.get()
+        if res != None:
+            res.room.occupancy -= 1
+            res.key.delete()
 
     return ""
 
