@@ -8,32 +8,13 @@ Quando um pedido é enviado ao servidor, ele recebe-o, processa-o e retorna o re
 Consoante a resposta recebida pelo browser, este corre uma tarefa/função específica (JS).
 
 """
-
+from google.appengine.ext import ndb
 from bottle import Bottle, run, template, request
-from user import User
-import base64, requests
-from room import Room
-from ticket import Ticket
 import json
+import requests
+from models import User, Room, Ticket
 
 app = Bottle()
-
-# Dict com utilizadores registados, para teste
-users = dict()
-andre = User("andre")
-miguel = User("miguel")
-
-users[andre.id] = andre
-users[miguel.id] = miguel
-
-rooms = dict()
-room1 = Room(12,"sala1", "alameda", "edificio1", 10, 0)
-room2 = Room(13,"sala2", "tagus", "edificio2", 12, 0)
-rooms[room1.id] = room1
-rooms[room2.id] = room2
-
-tickets = dict()
-
 
 usertemplate = ""
 with open("user_template.st", "r") as f:
@@ -222,40 +203,32 @@ def login():
     if username == "admin":
         return "0"
 
-    # REG - Se nao houver ninguém registado, cria novo utilizador, e regista-o
-    # LOG - Se não houver ninguém registado, impossível fazer login
-    if len(users) == 0:
-        if mode == "reg":
-            new_user = User(username)
-            users[new_user.id] = new_user
-            return str(new_user.id)
-        elif mode == "log":
-            return "invalid_log"
-
     # REG - Caso existam users registados, se o nome introduzido já existir, impossível registar
     # LOG - Se o nome introduzido já estiver registado, devolve username e id.
-    for id, user in users.items():
-        if username == user.username:
-            if mode == "log":
-                return str(id)
-            elif mode == "reg":
-                return "invalid_reg"
+    qry = User.query(User.username == username)
+    res = qry.get()
 
-    # LOG - Se o nome introduzido não estiver registado, impossível fazer login
-    if mode == "log":
-        return "invalid_log"
-    # REG - Se o nome introduzido não estiver registado, regista-o e devolve username e id
-    elif mode == "reg":
-        new_user = User(username)
-        users[new_user.id] = new_user
-        return str(new_user.id)
 
+    if res != None:
+        if mode == "log":
+            return str(res.id)
+        else:
+            return "-1"
+    else:
+        if mode == "reg":
+            new_user = User(username=username)
+            new_user.put()
+            return str(new_user.id)
+        else:
+            return "-1"
 
 @app.route('/user/<userid>')
 def user(userid):
-    _id = int(userid)
-    if _id in users:
-        return userLoggedInTemplate(users[_id])
+    _userid = int(userid)
+
+    user = getUserByID(_userid)
+    if user != None:
+        return userLoggedInTemplate(user)
     else:
         return "no such user"
 
@@ -263,9 +236,10 @@ def user(userid):
 @app.get('/listrooms')
 def listrooms():
 
+    qry = Room.query()
     response = "["
 
-    for room in rooms.values():
+    for room in qry:
         response += """
             {{
                 "name":"{}",
@@ -280,20 +254,40 @@ def listrooms():
     response = response[:-10]+ "]"
     return response
 
+
+def getUserByID(id):
+    qry = User.query(User.id == id)
+    return qry.get()
+
+def getRoomByID(id):
+    qry = Room.query(Room.id == id)
+    return qry.get()
+
+
 @app.get('/room/<roomid>/<userid>')
 def roomview(roomid, userid):
     _roomid = int(roomid)
     _userid = int(userid)
-    room = rooms[_roomid] # TODO: criar dicionario rooms
+
+
+    room = getRoomByID(_roomid)
+    if room == None:
+        return "-1"
+
+    user = getUserByID(_userid)
+    if user == None:
+        return "-1"
+
     _users = "[ "
 
     checkedin = False
 
+    tickets = Ticket.query()
 
-    for ticket in tickets.values():
-        if ticket.roomid == _roomid:
-            _users += '{{"username":"{}"}},'.format(users[ticket.user].username)
-            if ticket.user == _userid:
+    for ticket in tickets:
+        if ticket.room == room:
+            _users += '{{"username":"{}"}},'.format(ticket.user.username)
+            if ticket.user == user:
                 checkedin = True
 
     _users = _users[:-1] + "]"
@@ -316,10 +310,13 @@ def checkin(roomid, userid):
     _userid = int(userid)
     _roomid = int(roomid)
 
-    if _roomid in rooms and _userid in users:
-        room = rooms[_roomid]
+    room = getRoomByID(_roomid)
+    user = getUserByID(_userid)
+
+    if room != None and user != None:
         if room.occupancy + 1 <= room.capacity:
-            tickets[_userid] = Ticket(_roomid, users[_userid])
+            tk = Ticket(room=room, user=user)
+            tk.put()
             room.occupancy += 1
 
     return ""
@@ -327,12 +324,13 @@ def checkin(roomid, userid):
 @app.get('/checkout/<userid>')
 def checkout(userid):
     _userid = int(userid)
+    user = getUserByID(_userid)
 
-    if _userid in users:
-        if _userid in tickets:
-            room = rooms[tickets[_userid].roomid]
-            room.occupancy -= 1
-            del tickets[_userid]
+    if userid != None:
+        qry = Ticket.query(user=user)
+        if qry > 0:
+            qry[0].room.occupancy -= 1
+            qry[0].key.delete()
 
     return ""
 
