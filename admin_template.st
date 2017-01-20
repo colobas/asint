@@ -1,6 +1,8 @@
 <html>
     <head>
+        <script src="https://code.jquery.com/jquery-3.1.1.min.js"></script>
         <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+        <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
         <script>
 
             function clearContainer(){
@@ -15,17 +17,18 @@
 
                           content = '\
                                 <h2 class="form-signin-heading">Add a Room</h2>\
-                                <label for="inputCampus" class="sr-only">Campus</label>\
-                                <input type="campus" id="inputCampus" class="form-control" placeholder="Campus" required autofocus>\
-                                <label for="inputBuilding" class="sr-only">Building</label>\
-                                <input type="building" id="inputBuilding" class="form-control" placeholder="Building" required>\
-                                <label for="inputRoom" class="sr-only">Room Name</label>\
-                                <input type="room" id="inputRoom" class="form-control" placeholder="Room Name" required>\
-                                <div class="checkbox">\
+                                <div class="dropdown">\
+                                  <button class="btn btn-default dropdown-toggle" type="button" id="dropdownMenu1" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">\
+                                    Dropdown\
+                                    <span class="caret"></span>\
+                                  </button>\
+                                  <ul class="dropdown-menu" aria-labelledby="dropdownMenu1">\
+                                    <li><a href="#">Action</a></li>\
+                                    <li><a href="#">Another action</a></li>\
+                                    <li><a href="#">Something else here</a></li>\
+                                  </ul>\
                                 </div>\
-                                <button class="btn btn-lg btn-primary btn-block" type="submit">Add</button>\
-                              </form>\
-                             </div>';
+                                <button class="btn btn-lg btn-primary btn-block" type="submit">Add</button>';
 
                           content = content + '</tbody> </table> </div>';
                           document.getElementById("maincontainer").innerHTML = content;

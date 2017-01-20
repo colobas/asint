@@ -18,9 +18,13 @@ app = Bottle()
 
 usertemplate = ""
 hometemplate = ""
+admintemplate = ""
 
 with open("user_template.st", "r") as f:
     usertemplate = f.read()
+
+with open("admin_template.st", "r") as f:
+    admintemplate = f.read()
 
 with open("home.st", "r") as f:
 	hometemplate = f.read()
@@ -282,13 +286,17 @@ def admin():
     return adminLoggedInTemplate("")
 
 
+@app.get('/addroom')
+def addroom():
+    return
+
 
 def userLoggedInTemplate(user):
     return template(usertemplate, user=user)
 
 
 def adminLoggedInTemplate(adminscript):
-    return ""
+    return template(admintemplate, username=adminscript)
 
 
 if __name__ == '__main__':
