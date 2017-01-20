@@ -46,7 +46,6 @@
                         <thead>\
                            <th>Room name</th>\
                            <th>Campus</th>\
-                           <th>Building</th>\
                            <th>Occupancy</th>\
                            <th>Capacity</th>\
                         </thead>\
@@ -54,7 +53,6 @@
                         <tr>\
                             <td>'+room.name+'</td>\
                             <td>'+room.campus+'</td>\
-                            <td>'+room.building+'</td>\
                             <td>'+room.occupancy+'</td>\
                             <td>'+room.capacity+'</td>\
                         </tr>\
@@ -96,7 +94,6 @@
                                     <thead>\
                                         <tr>\
                                             <th>Name</th>\
-                                            <th>Building</th>\
                                             <th>Campus</th>\
                                             <th>Occupancy</th>\
                                             <th>Capacity</th>\
@@ -112,7 +109,6 @@
                            content = content + '\
                                         <tr>\
                                             <td><a href="#" onclick="showRoom('+room.id+')">'+room.name+'</a></td>\
-                                            <td>'+room.building+'</td>\
                                             <td>'+room.campus+'</td>\
                                             <td>'+room.occupancy+'</td>\
                                             <td>'+room.capacity+'</td>\

@@ -9,9 +9,9 @@ Consoante a resposta recebida pelo browser, este corre uma tarefa/função espec
 
 """
 from google.appengine.ext import ndb
+from google.appengine.api import urlfetch
 from bottle import Bottle, run, template, request
 import json
-import requests
 from models import User, Room, Ticket
 
 app = Bottle()
@@ -23,7 +23,7 @@ with open("user_template.st", "r") as f:
     usertemplate = f.read()
 
 with open("home.st", "r") as f:
-	hometemplate = f.read()
+    hometemplate = f.read()
 
 
 # Index, o que aparece no browser quando se acede ao servidor
@@ -34,101 +34,46 @@ def home():
 
 # Funcoes admin <--> fenix
 
+
+@app.route('/campus')
 def listCampus():
-    r = requests.get("https://fenix.tecnico.ulisboa.pt/api/fenix/v1/spaces")
-    response = r.json()
-    output = []
+    r = urlfetch.fetch("http://fenix.tecnico.ulisboa.pt/api/fenix/v1/spaces")
+    response = json.loads(r.content)
+    output = "[" 
 
-    for i in range(0, len(response)):
-        output.append(response[i]["name"])
-    return output
-
-
-def getCampusID(name):
-    r = requests.get("https://fenix.tecnico.ulisboa.pt/api/fenix/v1/spaces")
-    response = r.json()
-    if name == "Alameda":
-        return response[0]["id"]
-    elif name == "Nuclear":
-        return response[1]["id"]
-    elif name == "Tagus":
-        return response[2]["id"]
-    else:
-        return "Invalid campus name"
+    for campus in response:
+        output += "{\""+campus["name"]+"\","+campus["id"]+"},"
+    return output[:-1] + "]"
 
 
-def listBuildings(campus):
-    campus_id = getCampusID(campus)
-    r = requests.get("https://fenix.tecnico.ulisboa.pt/api/fenix/v1/spaces/"+campus_id)
-    response = r.json()
-    output = []
+def listContainedSpaces(space_id):
+    """
+    return list of tuples, one per contained space: (name, id)
+    """
+    r = urlfetch.fetch("http://fenix.tecnico.ulisboa.pt/api/fenix/v1/spaces/"+space_id)
+    response = json.loads(r.content)
+    output = "[ "
 
-    for i in range(0, len(response["containedSpaces"])):
-        output.append(response["containedSpaces"][i]["name"])
-    return output
+    for contained in response["containedSpaces"]:
+        output += "{\""+contained["name"]+"\","+contained["id"]+"},"
+    return output[:-1] + "]"
 
-
-def getBuildingID(campus, buildingName):
-    campus_id = getCampusID(campus)
-    r = requests.get("https://fenix.tecnico.ulisboa.pt/api/fenix/v1/spaces/"+campus_id)
-    response = r.json()
-
-    for i in range(0, len(response["containedSpaces"])):
-        if response["containedSpaces"][i]["name"] == buildingName:
-            return(response["containedSpaces"][i]["id"])
-    return "Invalid building name"
+@app.route('/campus/<campus_id>')
+def listCampusBuildings(campus_id):
+    return listContainedSpaces(campus_id)
 
 
-def listFloors(campus, buildingName):
-    building_id = getBuildingID(campus, buildingName)
-    r = requests.get("https://fenix.tecnico.ulisboa.pt/api/fenix/v1/spaces/" + building_id)
-    response = r.json()
-    output = []
+@app.route('/building/<building_id>')
+def listBuildingFloors(building_id):
+    return listContainedSpaces(building_id)
 
-    for i in range(0, len(response["containedSpaces"])):
-        output.append(response["containedSpaces"][i]["name"])
-    return output
+@app.route('/floor/<floor_id>')
+def listFloorRooms(floor_id):
+    return listContainedSpaces(floor_id)
 
-
-def getFloorID(campus, buildingName, floor):
-    building_id = getBuildingID(campus, buildingName)
-    r = requests.get("https://fenix.tecnico.ulisboa.pt/api/fenix/v1/spaces/" + building_id)
-    response = r.json()
-
-    for i in range(0, len(response["containedSpaces"])):
-        if response["containedSpaces"][i]["name"] == floor:
-            return response["containedSpaces"][i]["id"]
-    return "Invalid floor"
-
-
-def listRooms(campus, buildingName, floor):
-    floor_id = getFloorID(campus, buildingName, floor)
-    r = requests.get("https://fenix.tecnico.ulisboa.pt/api/fenix/v1/spaces/" + floor_id)
-    response = r.json()
-    output = []
-
-    for i in range(0, len(response["containedSpaces"])):
-        output.append(response["containedSpaces"][i]["name"])
-    return output
-
-
-def getRoomID(campus, buildingName, floor, room):
-    floor_id = getFloorID(campus, buildingName, floor)
-    r = requests.get("https://fenix.tecnico.ulisboa.pt/api/fenix/v1/spaces/" + floor_id)
-    response = r.json()
-
-    for i in range(0, len(response["containedSpaces"])):
-        if response["containedSpaces"][i]["name"] == room:
-            return response["containedSpaces"][i]["id"]
-    return "Invalid room"
-
-
-def getRoomCapacity(campus, buildingName, floor, room):
-    room_id = getRoomID(campus, buildingName, floor, room)
-    r = requests.get("https://fenix.tecnico.ulisboa.pt/api/fenix/v1/spaces/" + room_id)
-    response = r.json()
-
-    return response["capacity"]["normal"]
+def getFenixRoom(room_id):
+    r = urlfetch.fetch("http://fenix.tecnico.ulisboa.pt/api/fenix/v1/spaces/" + room_id)
+    return json.loads(r.content)
 
 
 @app.post('/')
@@ -215,9 +160,10 @@ def roomview(roomid, userid):
     if room == None:
         return "-1"
 
-    user = getUserByID(_userid)
-    if user == None:
-        return "-1"
+    if _userid != 0:
+        user = getUserByID(_userid)
+        if user == None:
+            return "-1"
 
     _users = "[ "
 
@@ -228,22 +174,22 @@ def roomview(roomid, userid):
     for ticket in tickets:
         if ticket.room == room:
             _users += '{{"username":"{}"}},'.format(ticket.user.username)
-            if ticket.user == user:
-                checkedin = True
+            if _userid != 0:
+                if ticket.user == user:
+                    checkedin = True
 
     _users = _users[:-1] + "]"
 
     return """
             {{
                 "name":"{}",
-                "building":"{}",
                 "campus":"{}",
                 "occupancy":{},
                 "capacity":{},
                 "users":{},
                 "checkedin":{}
             }}
-        """.format(room.name, room.building, room.campus, room.occupancy, room.capacity, _users, "true" if checkedin else "false")
+        """.format(room.name, room.campus, room.occupancy, room.capacity, _users, "true" if checkedin else "false")
 
 
 @app.get('/checkin/<roomid>/<userid>')
@@ -281,7 +227,19 @@ def checkout(userid):
 def admin():
     return adminLoggedInTemplate("")
 
-
+@app.route('/admin/addroom/<roomid>')
+def addRoom(roomid):
+    if getRoomByID(int(roomid)) != None:
+        return roomview(int(roomid),0)
+    try:
+        _room = getFenixRoom(roomid)
+        room = Room(name=_room["name"], id=int(_room["id"]), 
+                    capacity=int(_room["capacity"]["normal"]), 
+                    occupancy=0)
+        room.put()
+        return roomview(_room["id"],0)
+    except:
+        return "failed to add room."
 
 def userLoggedInTemplate(user):
     return template(usertemplate, user=user)
