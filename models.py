@@ -16,8 +16,7 @@ class Ticket(ndb.Model):
 
 class Room(ndb.Model):
     name = ndb.StringProperty()
-    id = ndb.ComputedProperty(lambda self: encodeName(self.name))
+    id = ndb.IntegerProperty()
     campus = ndb.StringProperty()
-    building = ndb.StringProperty()
     capacity = ndb.IntegerProperty()
     occupancy = ndb.IntegerProperty()
