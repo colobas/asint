@@ -45,7 +45,7 @@ def listCampus():
     response = json.loads(r.content)
     output = "[ " 
 
-    for contained in response["containedSpaces"]:
+    for contained in response:
         output += "{\"name\":\""+contained["name"]+"\",\"id\":"+contained["id"]+"},"
     return output[:-1] + "]"
 
