@@ -156,21 +156,8 @@ def getRoomByID(id):
     return qry.get()
 
 
-@app.get('/room/<roomid>/<userid>')
-def roomview(roomid, userid):
-    _roomid = int(roomid)
-    _userid = int(userid)
-
-
-    room = getRoomByID(_roomid)
-    if room == None:
-        return "-1"
-
-    if _userid != 0:
-        user = getUserByID(_userid)
-        if user == None:
-            return "-1"
-
+def viewroom(room, user, _userid, tk=None):
+    import pdb; pdb.set_trace()
     _users = "[ "
 
     checkedin = False
@@ -179,9 +166,17 @@ def roomview(roomid, userid):
     for ticket in tickets:
         if ticket.room == room.key:
             _users += '{{"username":"{}"}},'.format(ticket.user.get().username)
-            if _userid != 0:
+            if _userid != 0 and tk == None:
                 if ticket.user == user.key:
                     checkedin = True
+
+    # this has to be done, because when checking in, the query sometimes doesn't
+    # retrieve the last ticket (the one added when checking in).
+    if tk != None:
+        checkedin = True
+        if user.username not in _users:
+            _users += '{{"username":"{}"}},'.format(user.username)
+
 
     return """
             {{
@@ -194,10 +189,27 @@ def roomview(roomid, userid):
             }}
         """.format(room.name, room.campus, room.occupancy, room.capacity, _users[:-1]+"]", "true" if checkedin else "false")
 
+@app.get('/room/<roomid>/<userid>')
+def roomview(roomid, userid):
+    _roomid = int(roomid)
+    _userid = int(userid)
+
+    room = getRoomByID(_roomid)
+    if room == None:
+        return "-1"
+
+    if _userid != 0:
+        user = getUserByID(_userid)
+        if user == None:
+            return "-1"
+    else:
+        user = None
+
+    return viewroom(room, user, _userid)
+
 
 @app.get('/checkin/<roomid>/<userid>')
 def checkin(roomid, userid):
-
     checkout(userid)
 
     _userid = int(userid)
@@ -212,8 +224,8 @@ def checkin(roomid, userid):
             tk.put()
             room.occupancy += 1
             room.put()
-            return roomview(roomid, userid)
-    return roomview(roomid, userid)
+            return viewroom(room, user, _userid, tk)
+    return viewroom(room, user, _userid)
 
 
 @app.get('/checkout/<userid>')
@@ -233,7 +245,7 @@ def checkout(userid):
             res.key.delete()
 
     if roomid != 0:
-        return roomview(roomid, userid)
+        return viewroom(room, user, _userid)
     else:
         return "{}"
 
@@ -243,8 +255,9 @@ def admin():
 
 @app.route('/admin/addroom/<roomid>')
 def addRoom(roomid):
-    if getRoomByID(int(roomid)) != None:
-        return roomview(roomid, 0)
+    room = getRoomByID(int(roomid))
+    if room != None:
+        return viewroom(room, None, 0)
     try:
         _room = getFenixRoom(roomid)
         if (_room["capacity"]["normal"]) == 0:
@@ -255,7 +268,7 @@ def addRoom(roomid):
                     campus=_room["topLevelSpace"]["name"].encode('utf-8'),
                     occupancy=0)
         room.put()
-        return roomview(roomid, 0)
+        return viewroom(room, None, 0)
     except:
         return "-1"
 

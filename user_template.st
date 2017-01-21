@@ -9,7 +9,8 @@
             function checkIn(roomid){
                 var xhttp = new XMLHttpRequest();
                 xhttp.onreadystatechange = function() {
-                    listRooms();
+                    room = JSON.parse(this.responseText);
+                    printRoom(room, roomid);
                 }
                 xhttp.open("GET", "/checkin/"+roomid+"/{{user.id}}", true);
                 xhttp.send();
@@ -18,7 +19,8 @@
             function checkOut(roomid){
                 var xhttp = new XMLHttpRequest();
                 xhttp.onreadystatechange = function() {
-                    listRooms();
+                    room = JSON.parse(this.responseText);
+                    printRoom(room, roomid);
                 }
                 xhttp.open("GET", "/checkout/{{user.id}}", true);
                 xhttp.send();

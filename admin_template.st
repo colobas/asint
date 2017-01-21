@@ -10,6 +10,7 @@
             }
 
             function listCampi(){
+                clearContainer();
                 var xhttp = new XMLHttpRequest();
                 xhttp.onreadystatechange = function() {
                     if (this.readyState == 4 && this.status == 200) {
@@ -35,13 +36,25 @@
                 xhttp.send();
             }
 
+            function deleteDropdown(id){
+                var el = document.getElementById(id);
+                if (el) {
+                    el.parentNode.removeChild(el);
+                }
+            }
+
+
             function listCampusBuildings(campus_id){
+                deleteDropdown("buildings");
+                deleteDropdown("rooms");
+                deleteDropdown("floors");
+
                 var xhttp = new XMLHttpRequest();
                 xhttp.onreadystatechange = function() {
                     if (this.readyState == 4 && this.status == 200) {
                         parsed = JSON.parse(this.responseText);
                         content = '\
-                            <div class="dropdown">\
+                            <div class="dropdown" id="buildings">\
                                 <button class="btn btn-default dropdown-toggle" type="button" id="dropdownMenu2" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">\
                     Buildings\ <span class="caret"></span>\
                                 </button>\
@@ -62,16 +75,19 @@
             }
 
             function listBuildingFloors(building_id){
+                deleteDropdown("rooms");
+                deleteDropdown("floors");
+
                 var xhttp = new XMLHttpRequest();
                 xhttp.onreadystatechange = function() {
                     if (this.readyState == 4 && this.status == 200) {
                         parsed = JSON.parse(this.responseText);
                         content = '\
-                            <div class="dropdown">\
+                            <div class="dropdown" id="floors">\
                                 <button class="btn btn-default dropdown-toggle" type="button" id="dropdownMenu3" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">\
                     Floors\ <span class="caret"></span>\
                                 </button>\
-                                <ul class="dropdown-menu" aria-labelledby="Building">';
+                                <ul class="dropdown-menu" aria-labelledby="Floor">';
 
                         for (var i=0; i<parsed.length; i++){
                             content = content + '<li><a href="#" onclick="listFloorRooms(';
@@ -88,16 +104,18 @@
             }
 
             function listFloorRooms(floor_id){
+                deleteDropdown("rooms");
+
                 var xhttp = new XMLHttpRequest();
                 xhttp.onreadystatechange = function() {
                     if (this.readyState == 4 && this.status == 200) {
                         parsed = JSON.parse(this.responseText);
                         content = '\
-                            <div class="dropdown">\
+                            <div class="dropdown" id="rooms">\
                                 <button class="btn btn-default dropdown-toggle" type="button" id="dropdownMenu4" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">\
                     Rooms\ <span class="caret"></span>\
                                 </button>\
-                                <ul class="dropdown-menu" aria-labelledby="Building">';
+                                <ul class="dropdown-menu" aria-labelledby="Room">';
 
                         for (var i=0; i<parsed.length; i++){
                             content = content + '<li><a href="#" onclick="addRoom(';
@@ -134,11 +152,7 @@
             }
 
             function printRoom(room, roomid) {
-                if (!room.checkedin) {
-                    content = content + '<button align="center" type="button" onclick="checkIn('+roomid+')" class="btn btn-lg btn-default">Check In</button>';
-                } else {
-                    content = content + '<button align="center" type="button" onclick="checkOut('+roomid+')" class="btn btn-lg btn-default">Check Out</button>';
-                }
+                content = '';
                 content = content + '\
                 <div class="table-responsive">\
                 <table class="table table-striped">\
