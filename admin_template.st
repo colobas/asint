@@ -20,7 +20,7 @@
                                 <button class="btn btn-default dropdown-toggle" type="button" id="dropdownMenu1" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">\
                     Dropdown\ <span class="caret"></span>\
                                 </button>\
-                                <ul class="dropdown-menu" aria-labelledby="Campus">\';
+                                <ul class="dropdown-menu" aria-labelledby="Campus">';
 
                         for (var i=0; i<parsed.length; i++){
                             content = content + '<li><a href="#" onclick="listCampusFloors(';
@@ -145,7 +145,7 @@
           </div>
           <div id="navbar" class="navbar-collapse collapse">
             <ul class="nav navbar-nav">
-             <li class="active"><a href="#" onclick="addRoom()">Add Room</a></li>
+             <li class="active"><a href="#" onclick="listRoomsToAdd()">Add Room</a></li>
              <li class="active"><a href="#" onclick="listRooms()">Rooms</a></li>
             </ul>
           </div><!--/.nav-collapse -->
