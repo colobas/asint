@@ -9,29 +9,38 @@
                 document.getElementById("maincontainer").innerHTML = "";
             }
 
+            function listRoomsToAdd(){
+                var xhttp = new XMLHttpRequest();
+                xhttp.onreadystatechange = function() {
+                    if (this.readyState == 4 && this.status == 200) {
+                        parsed = JSON.parse(this.responseText);
+                        content = '\
+                            <h2 class="form-signin-heading">Add a Room</h2>\
+                            <div class="dropdown">\
+                                <button class="btn btn-default dropdown-toggle" type="button" id="dropdownMenu1" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">\
+                    Dropdown\ <span class="caret"></span>\
+                                </button>\
+                                <ul class="dropdown-menu" aria-labelledby="Campus">\';
+
+                        for (var i=0; i<parsed.length; i++){
+                            content = content + '<li><a href="#" onclick="listCampusFloors(';
+                            content = content + parsed[i]['id']+')';
+                            content = content + '">'+parsed[i]['name']+'</a></li>';
+                        }
+                        content = content + '</ul> </div>';
+                        document.getElementById("maincontainer").innerHTML = content;
+                    }
+                };
+                xhttp.open("GET", "/admin/campi", true);
+                xhttp.send();
+            }
+
             function addRoom(){
                 clearContainer();
                 var xhttp = new XMLHttpRequest();
                 xhttp.onreadystatechange = function() {
                     if (this.readyState == 4 && this.status == 200) {
 
-                          content = '\
-                                <h2 class="form-signin-heading">Add a Room</h2>\
-                                <div class="dropdown">\
-                                  <button class="btn btn-default dropdown-toggle" type="button" id="dropdownMenu1" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">\
-                                    Dropdown\
-                                    <span class="caret"></span>\
-                                  </button>\
-                                  <ul class="dropdown-menu" aria-labelledby="dropdownMenu1">\
-                                    <li><a href="#">Action</a></li>\
-                                    <li><a href="#">Another action</a></li>\
-                                    <li><a href="#">Something else here</a></li>\
-                                  </ul>\
-                                </div>\
-                                <button class="btn btn-lg btn-primary btn-block" type="submit">Add</button>';
-
-                          content = content + '</tbody> </table> </div>';
-                          document.getElementById("maincontainer").innerHTML = content;
                     }
                 };
                 xhttp.open("GET", "/addroom", true);

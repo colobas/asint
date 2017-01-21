@@ -39,27 +39,24 @@ def home():
 # Funcoes admin <--> fenix
 
 
-@app.route('/campus')
+@app.route('/admin/campi')
 def listCampus():
     r = urlfetch.fetch("http://fenix.tecnico.ulisboa.pt/api/fenix/v1/spaces")
     response = json.loads(r.content)
-    output = "[" 
+    output = "[ " 
 
-    for campus in response:
-        output += "{\""+campus["name"]+"\","+campus["id"]+"},"
+    for contained in response["containedSpaces"]:
+        output += "{\"name\":\""+contained["name"]+"\",\"id\":"+contained["id"]+"},"
     return output[:-1] + "]"
 
 
 def listContainedSpaces(space_id):
-    """
-    return list of tuples, one per contained space: (name, id)
-    """
     r = urlfetch.fetch("http://fenix.tecnico.ulisboa.pt/api/fenix/v1/spaces/"+space_id)
     response = json.loads(r.content)
     output = "[ "
 
     for contained in response["containedSpaces"]:
-        output += "{\""+contained["name"]+"\","+contained["id"]+"},"
+        output += "{\"name\":\""+contained["name"]+"\",\"id\":"+contained["id"]+"},"
     return output[:-1] + "]"
 
 @app.route('/campus/<campus_id>')
