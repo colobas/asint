@@ -59,16 +59,16 @@ def listContainedSpaces(space_id):
         output += "{\"name\":\""+contained["name"]+"\",\"id\":"+contained["id"]+"},"
     return output[:-1] + "]"
 
-@app.route('/campus/<campus_id>')
+@app.route('/admin/campus/<campus_id>')
 def listCampusBuildings(campus_id):
     return listContainedSpaces(campus_id)
 
 
-@app.route('/building/<building_id>')
+@app.route('/admin/building/<building_id>')
 def listBuildingFloors(building_id):
     return listContainedSpaces(building_id)
 
-@app.route('/floor/<floor_id>')
+@app.route('/admin/floor/<floor_id>')
 def listFloorRooms(floor_id):
     return listContainedSpaces(floor_id)
 
@@ -231,16 +231,16 @@ def admin():
 @app.route('/admin/addroom/<roomid>')
 def addRoom(roomid):
     if getRoomByID(int(roomid)) != None:
-        return roomview(int(roomid),0)
+        return "room already added"
     try:
         _room = getFenixRoom(roomid)
         room = Room(name=_room["name"], id=int(_room["id"]), 
                     capacity=int(_room["capacity"]["normal"]), 
                     occupancy=0)
         room.put()
-        return roomview(_room["id"],0)
+        return "ok"
     except:
-        return "failed to add room."
+        return "-1"
 
 def userLoggedInTemplate(user):
     return template(usertemplate, user=user)

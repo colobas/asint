@@ -9,7 +9,7 @@
                 document.getElementById("maincontainer").innerHTML = "";
             }
 
-            function listRoomsToAdd(){
+            function listCampi(){
                 var xhttp = new XMLHttpRequest();
                 xhttp.onreadystatechange = function() {
                     if (this.readyState == 4 && this.status == 200) {
@@ -23,7 +23,7 @@
                                 <ul class="dropdown-menu" aria-labelledby="Campus">';
 
                         for (var i=0; i<parsed.length; i++){
-                            content = content + '<li><a href="#" onclick="listCampusFloors(';
+                            content = content + '<li><a href="#" onclick="listCampusBuildings(';
                             content = content + parsed[i]['id']+')';
                             content = content + '">'+parsed[i]['name']+'</a></li>';
                         }
@@ -35,15 +35,97 @@
                 xhttp.send();
             }
 
-            function addRoom(){
-                clearContainer();
+            function listCampusBuildings(campus_id){
                 var xhttp = new XMLHttpRequest();
                 xhttp.onreadystatechange = function() {
                     if (this.readyState == 4 && this.status == 200) {
+                        parsed = JSON.parse(this.responseText);
+                        content = '\
+                            <div class="dropdown">\
+                                <button class="btn btn-default dropdown-toggle" type="button" id="dropdownMenu2" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">\
+                    Buildings\ <span class="caret"></span>\
+                                </button>\
+                                <ul class="dropdown-menu" aria-labelledby="Building">';
 
+                        for (var i=0; i<parsed.length; i++){
+                            content = content + '<li><a href="#" onclick="listBuildingFloors(';
+                            content = content + parsed[i]['id']+')';
+                            content = content + '">'+parsed[i]['name']+'</a></li>';
+                        }
+                        content = content + '</ul> </div>';
+                        container = document.getElementById("maincontainer");
+                        container.innerHTML = container.innerHTML + content;
                     }
                 };
-                xhttp.open("GET", "/addroom", true);
+                xhttp.open("GET", "/admin/campus/" + campus_id, true);
+                xhttp.send();
+            }
+
+            function listBuildingFloors(building_id){
+                var xhttp = new XMLHttpRequest();
+                xhttp.onreadystatechange = function() {
+                    if (this.readyState == 4 && this.status == 200) {
+                        parsed = JSON.parse(this.responseText);
+                        content = '\
+                            <div class="dropdown">\
+                                <button class="btn btn-default dropdown-toggle" type="button" id="dropdownMenu3" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">\
+                    Floors\ <span class="caret"></span>\
+                                </button>\
+                                <ul class="dropdown-menu" aria-labelledby="Building">';
+
+                        for (var i=0; i<parsed.length; i++){
+                            content = content + '<li><a href="#" onclick="listFloorRooms(';
+                            content = content + parsed[i]['id']+')';
+                            content = content + '">'+parsed[i]['name']+'</a></li>';
+                        }
+                        content = content + '</ul> </div>';
+                        container = document.getElementById("maincontainer");
+                        container.innerHTML = container.innerHTML + content;
+                    }
+                };
+                xhttp.open("GET", "/admin/building/" + building_id, true);
+                xhttp.send();
+            }
+
+            function listFloorRooms(floor_id){
+                var xhttp = new XMLHttpRequest();
+                xhttp.onreadystatechange = function() {
+                    if (this.readyState == 4 && this.status == 200) {
+                        parsed = JSON.parse(this.responseText);
+                        content = '\
+                            <div class="dropdown">\
+                                <button class="btn btn-default dropdown-toggle" type="button" id="dropdownMenu4" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">\
+                    Rooms\ <span class="caret"></span>\
+                                </button>\
+                                <ul class="dropdown-menu" aria-labelledby="Building">';
+
+                        for (var i=0; i<parsed.length; i++){
+                            content = content + '<li><a href="#" onclick="addRoom(';
+                            content = content + parsed[i]['id']+')';
+                            content = content + '">'+parsed[i]['name']+'</a></li>';
+                        }
+                        content = content + '</ul> </div>';
+                        container = document.getElementById("maincontainer");
+                        container.innerHTML = container.innerHTML + content;
+                    }
+                };
+                xhttp.open("GET", "/admin/floor/" + floor_id, true);
+                xhttp.send();
+            }
+
+            function addRoom(room_id){
+                var xhttp = new XMLHttpRequest();
+                xhttp.onreadystatechange = function() {
+                    if (this.readyState == 4 && this.status == 200) {
+                        if (this.responseText == "-1"){
+                            window.alert("Invalid room ID.");
+                            clearContainer();
+                        } else {
+                            showRoom(room_id);
+                        }
+                   }
+                };
+                xhttp.open("GET", "/admin/addroom/" + room_id, true);
                 xhttp.send();
             }
 
@@ -145,7 +227,7 @@
           </div>
           <div id="navbar" class="navbar-collapse collapse">
             <ul class="nav navbar-nav">
-             <li class="active"><a href="#" onclick="listRoomsToAdd()">Add Room</a></li>
+             <li class="active"><a href="#" onclick="listCampi()">Add Room</a></li>
              <li class="active"><a href="#" onclick="listRooms()">Rooms</a></li>
             </ul>
           </div><!--/.nav-collapse -->
