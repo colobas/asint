@@ -122,7 +122,6 @@ def user(userid):
 
 @app.get('/listrooms')
 def listrooms():
-
     qry = Room.query()
     response = "["
 
@@ -130,13 +129,12 @@ def listrooms():
         response += """
             {{
                 "name":"{}",
-                "building":"{}",
                 "campus":"{}",
                 "occupancy":{},
                 "capacity":{},
                 "id":"{}"
             }},
-        """.format(room.name, room.building, room.campus, room.occupancy, room.capacity, room.id)
+        """.format(room.name, room.campus, room.occupancy, room.capacity, room.id)
 
     response = response[:-10]+ "]"
     return response
@@ -195,6 +193,7 @@ def roomview(roomid, userid):
 
 @app.get('/checkin/<roomid>/<userid>')
 def checkin(roomid, userid):
+    import pdb; pdb.set_trace()
     _userid = int(userid)
     _roomid = int(roomid)
 
@@ -236,6 +235,7 @@ def addRoom(roomid):
         _room = getFenixRoom(roomid)
         room = Room(name=_room["name"], id=int(_room["id"]), 
                     capacity=int(_room["capacity"]["normal"]), 
+                    campus=_room["topLevelSpace"]["name"],
                     occupancy=0)
         room.put()
         return "ok"
