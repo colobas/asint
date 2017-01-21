@@ -9,7 +9,7 @@
             function checkIn(roomid){
                 var xhttp = new XMLHttpRequest();
                 xhttp.onreadystatechange = function() {
-                    showRoom(roomid);
+                    listRooms();
                 }
                 xhttp.open("GET", "/checkin/"+roomid+"/{{user.id}}", true);
                 xhttp.send();
@@ -18,7 +18,7 @@
             function checkOut(roomid){
                 var xhttp = new XMLHttpRequest();
                 xhttp.onreadystatechange = function() {
-                    showRoom(roomid);
+                    listRooms();
                 }
                 xhttp.open("GET", "/checkout/{{user.id}}", true);
                 xhttp.send();
@@ -28,56 +28,62 @@
                 document.getElementById("maincontainer").innerHTML = "";
             }
 
+            function printRoom(room, roomid) {
+                content = '';
+                if (!room.checkedin) {
+                    content = content + '<button align="center" type="button" onclick="checkIn('+roomid+')" class="btn btn-lg btn-default">Check In</button>';
+                } else {
+                    content = content + '<button align="center" type="button" onclick="checkOut('+roomid+')" class="btn btn-lg btn-default">Check Out</button>';
+                }
+                content = content + '\
+                <div class="table-responsive">\
+                <table class="table table-striped">\
+                <thead>\
+                   <th>Room name</th>\
+                   <th>Campus</th>\
+                   <th>Occupancy</th>\
+                   <th>Capacity</th>\
+                </thead>\
+                <tbody>\
+                <tr>\
+                    <td>'+room.name+'</td>\
+                    <td>'+room.campus+'</td>\
+                    <td>'+room.occupancy+'</td>\
+                    <td>'+room.capacity+'</td>\
+                </tr>\
+                </tbody>\
+                </table>\
+                </div>';
+
+
+                if (room.occupancy > 0) {
+                    content = content + '\
+                            <h3><b>Users</b></h3>\
+                            <ul>';
+
+                    for (var i=0; i<room.users.length; i++) {
+                       content = content + '<li>'+room.users[i].username+'</li>';
+                    }
+
+                    content = content + '</ul>';
+                }
+                document.getElementById("maincontainer").innerHTML = content;
+            }
+
+
             function showRoom(roomid){
                 clearContainer();
                 var xhttp = new XMLHttpRequest();
                 xhttp.onreadystatechange = function() {
                     if (this.readyState == 4 && this.status == 200) {
                         room = JSON.parse(this.responseText);
-                        content = '';
-                        if (!room.checkedin) { 
-                            content = content + '<button align="center" type="button" onclick="checkIn('+roomid+')" class="btn btn-lg btn-default">Check In</button>';
-                        } else {
-                            content = content + '<button align="center" type="button" onclick="checkOut('+roomid+')" class="btn btn-lg btn-default">Check Out</button>';
-                        } 
-                        content = content + '\
-                        <div class="table-responsive">\
-                        <table class="table table-striped">\
-                        <thead>\
-                           <th>Room name</th>\
-                           <th>Campus</th>\
-                           <th>Occupancy</th>\
-                           <th>Capacity</th>\
-                        </thead>\
-                        <tbody>\
-                        <tr>\
-                            <td>'+room.name+'</td>\
-                            <td>'+room.campus+'</td>\
-                            <td>'+room.occupancy+'</td>\
-                            <td>'+room.capacity+'</td>\
-                        </tr>\
-                        </tbody>\
-                        </table>\
-                        </div>';
-
-
-                        if (room.occupancy > 0) {
-                            content = content + '\
-                                    <h3><b>Users</b></h3>\
-                                    <ul>';
-
-                            for (var i=0; i<room.users.length; i++) {
-                               content = content + '<li>'+room.users[i].username+'</li>';
-                            }
-
-                            content = content + '</ul>';
-                        }
+                        printRoom(room, roomid);
                     }
-                    document.getElementById("maincontainer").innerHTML = content;
                 };
                 xhttp.open("GET", "/room/"+roomid+"/{{user.id}}", true);
                 xhttp.send();
             }
+
 
             function listRooms(){
                 clearContainer();

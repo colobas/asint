@@ -57,11 +57,12 @@ def listContainedSpaces(space_id, looking_for):
 
     for contained in response["containedSpaces"]:
         if contained["type"] == looking_for:
-            output += "{\"name\":\""+contained["name"]+"\",\"id\":"+contained["id"]+"},"
+            output += "{\"name\":\""+contained["name"].encode('utf-8')+"\",\"id\":"+str(contained["id"])+"},"
         else:
-            nested = listContainedSpaces(contained["id"], looking_for)
+            _nested = listContainedSpaces(str(contained["id"]), looking_for)
+            nested = json.loads(_nested)
             for nested_cont in nested:
-                output += "{\"name\":\""+nested_cont["name"]+"\",\"id\":"+nested_cont["id"]+"},"
+                output += "{\"name\":\""+nested_cont["name"].encode('utf-8')+"\",\"id\":"+str(nested_cont["id"])+"},"
 
     return output[:-1] + "]"
 
@@ -128,7 +129,7 @@ def user(userid):
 
 @app.get('/listrooms')
 def listrooms():
-    qry = Room.query()
+    qry = Room.query().fetch()
     response = "["
 
     for room in qry:
@@ -142,7 +143,7 @@ def listrooms():
             }},
         """.format(room.name, room.campus, room.occupancy, room.capacity, room.id)
 
-    response = response[:-10]+ "]"
+    response = response[:-10] + "]"
     return response
 
 
@@ -173,17 +174,14 @@ def roomview(roomid, userid):
     _users = "[ "
 
     checkedin = False
-
-    tickets = Ticket.query()
+    tickets = Ticket.query().fetch()
 
     for ticket in tickets:
-        if ticket.room == room:
-            _users += '{{"username":"{}"}},'.format(ticket.user.username)
+        if ticket.room == room.key:
+            _users += '{{"username":"{}"}},'.format(ticket.user.get().username)
             if _userid != 0:
-                if ticket.user == user:
+                if ticket.user == user.key:
                     checkedin = True
-
-    _users = _users[:-1] + "]"
 
     return """
             {{
@@ -194,12 +192,14 @@ def roomview(roomid, userid):
                 "users":{},
                 "checkedin":{}
             }}
-        """.format(room.name, room.campus, room.occupancy, room.capacity, _users, "true" if checkedin else "false")
+        """.format(room.name, room.campus, room.occupancy, room.capacity, _users[:-1]+"]", "true" if checkedin else "false")
 
 
 @app.get('/checkin/<roomid>/<userid>')
 def checkin(roomid, userid):
-    import pdb; pdb.set_trace()
+
+    checkout(userid)
+
     _userid = int(userid)
     _roomid = int(roomid)
 
@@ -208,26 +208,34 @@ def checkin(roomid, userid):
 
     if room != None and user != None:
         if room.occupancy + 1 <= room.capacity:
-            tk = Ticket(room=room, user=user)
+            tk = Ticket(room=room.key, user=user.key)
             tk.put()
             room.occupancy += 1
+            room.put()
+            return roomview(roomid, userid)
+    return roomview(roomid, userid)
 
-    return ""
 
 @app.get('/checkout/<userid>')
 def checkout(userid):
     _userid = int(userid)
+    roomid = 0
     user = getUserByID(_userid)
 
-    if userid != None:
-        qry = Ticket.query(user=user)
+    if user != None:
+        qry = Ticket.query(Ticket.user == user.key)
         res = qry.get()
         if res != None:
-            res.room.occupancy -= 1
+            room = res.room.get()
+            roomid = room.id
+            room.occupancy -= 1
+            room.put()
             res.key.delete()
 
-    return ""
-
+    if roomid != 0:
+        return roomview(roomid, userid)
+    else:
+        return "{}"
 
 @app.route('/admin')
 def admin():
@@ -236,15 +244,18 @@ def admin():
 @app.route('/admin/addroom/<roomid>')
 def addRoom(roomid):
     if getRoomByID(int(roomid)) != None:
-        return "room already added"
+        return roomview(roomid, 0)
     try:
         _room = getFenixRoom(roomid)
-        room = Room(name=_room["name"], id=int(_room["id"]), 
+        if (_room["capacity"]["normal"]) == 0:
+            return "-2"
+
+        room = Room(name=_room["name"].encode('utf-8'), id=int(_room["id"]),
                     capacity=int(_room["capacity"]["normal"]), 
-                    campus=_room["topLevelSpace"]["name"],
+                    campus=_room["topLevelSpace"]["name"].encode('utf-8'),
                     occupancy=0)
         room.put()
-        return "ok"
+        return roomview(roomid, 0)
     except:
         return "-1"
 
