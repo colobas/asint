@@ -50,27 +50,33 @@ def listCampus():
     return output[:-1] + "]"
 
 
-def listContainedSpaces(space_id):
+def listContainedSpaces(space_id, looking_for):
     r = urlfetch.fetch("http://fenix.tecnico.ulisboa.pt/api/fenix/v1/spaces/"+space_id)
     response = json.loads(r.content)
     output = "[ "
 
     for contained in response["containedSpaces"]:
-        output += "{\"name\":\""+contained["name"]+"\",\"id\":"+contained["id"]+"},"
+        if contained["type"] == looking_for:
+            output += "{\"name\":\""+contained["name"]+"\",\"id\":"+contained["id"]+"},"
+        else:
+            nested = listContainedSpaces(contained["id"], looking_for)
+            for nested_cont in nested:
+                output += "{\"name\":\""+nested_cont["name"]+"\",\"id\":"+nested_cont["id"]+"},"
+
     return output[:-1] + "]"
 
 @app.route('/admin/campus/<campus_id>')
 def listCampusBuildings(campus_id):
-    return listContainedSpaces(campus_id)
+    return listContainedSpaces(campus_id, "BUILDING")
 
 
 @app.route('/admin/building/<building_id>')
 def listBuildingFloors(building_id):
-    return listContainedSpaces(building_id)
+    return listContainedSpaces(building_id, "FLOOR")
 
 @app.route('/admin/floor/<floor_id>')
 def listFloorRooms(floor_id):
-    return listContainedSpaces(floor_id)
+    return listContainedSpaces(floor_id, "ROOM")
 
 def getFenixRoom(room_id):
     r = urlfetch.fetch("http://fenix.tecnico.ulisboa.pt/api/fenix/v1/spaces/" + room_id)
