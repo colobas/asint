@@ -157,7 +157,6 @@ def getRoomByID(id):
 
 
 def viewroom(room, user, _userid, tk=None):
-    import pdb; pdb.set_trace()
     _users = "[ "
 
     checkedin = False
