@@ -18,7 +18,7 @@
                             <h2 class="form-signin-heading">Add a Room</h2>\
                             <div class="dropdown">\
                                 <button class="btn btn-default dropdown-toggle" type="button" id="dropdownMenu1" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">\
-                    Dropdown\ <span class="caret"></span>\
+                    Campus\ <span class="caret"></span>\
                                 </button>\
                                 <ul class="dropdown-menu" aria-labelledby="Campus">';
 
