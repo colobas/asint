@@ -68,6 +68,40 @@ def adminLoggedInTemplate(adminscript):
     return template(admintemplate, username=adminscript)
 
 
+def viewroom(room, user, _userid, tk=None):
+
+    _users = "[ "
+
+    checkedin = False
+    tickets = Ticket.query().fetch()
+
+    for ticket in tickets:
+        if ticket.room == room.key:
+            _users += '{{"username":"{}"}},'.format(ticket.user.get().username)
+            if _userid != 0 and tk == None:
+                if ticket.user == user.key:
+                    checkedin = True
+
+    # this has to be done, because when checking in, the query sometimes doesn't
+    # retrieve the last ticket (the one added when checking in).
+    if tk != None:
+        checkedin = True
+        if user.username not in _users:
+            _users += '{{"username":"{}"}},'.format(user.username)
+
+
+    return """
+            {{
+                "name":"{}",
+                "campus":"{}",
+                "occupancy":{},
+                "capacity":{},
+                "users":{},
+                "checkedin":{}
+            }}
+        """.format(room.name, room.campus, room.occupancy, room.capacity, _users[:-1]+"]", "true" if checkedin else "false")
+
+
 @app.get('/')
 def home():
     return template(hometemplate)
@@ -192,7 +226,6 @@ def roomview(roomid, userid):
     _roomid = int(roomid)
     _userid = int(userid)
 
-
     room = getRoomByID(_roomid)
     if room == None:
         return "-1"
@@ -201,34 +234,14 @@ def roomview(roomid, userid):
         user = getUserByID(_userid)
         if user == None:
             return "-1"
+    else:
+        user = None
 
-    _users = "[ "
-
-    checkedin = False
-    tickets = Ticket.query().fetch()
-
-    for ticket in tickets:
-        if ticket.room == room.key:
-            _users += '{{"username":"{}"}},'.format(ticket.user.get().username)
-            if _userid != 0:
-                if ticket.user == user.key:
-                    checkedin = True
-
-    return """
-            {{
-                "name":"{}",
-                "campus":"{}",
-                "occupancy":{},
-                "capacity":{},
-                "users":{},
-                "checkedin":{}
-            }}
-        """.format(room.name, room.campus, room.occupancy, room.capacity, _users[:-1]+"]", "true" if checkedin else "false")
+    return viewroom(room, user, _userid)
 
 
 @app.get('/checkin/<roomid>/<userid>')
 def checkin(roomid, userid):
-
     checkout(userid)
 
     _userid = int(userid)
@@ -243,8 +256,8 @@ def checkin(roomid, userid):
             tk.put()
             room.occupancy += 1
             room.put()
-            return roomview(roomid, userid)
-    return roomview(roomid, userid)
+            return viewroom(room, user, _userid, tk)
+    return viewroom(room, user, _userid)
 
 
 @app.get('/checkout/<userid>')
@@ -264,7 +277,7 @@ def checkout(userid):
             res.key.delete()
 
     if roomid != 0:
-        return roomview(roomid, userid)
+        return viewroom(room, user, _userid)
     else:
         return "{}"
 
