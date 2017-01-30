@@ -34,6 +34,7 @@
                 function submit(mode, admin) {
                     if (admin) {
                         window.location = "/admin";
+                        return;
                     }
 
                     // str guarda o username introduzido, do respectivo campo login/registo-->
