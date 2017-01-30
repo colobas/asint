@@ -30,24 +30,13 @@ with open("home.st", "r") as f:
     hometemplate = f.read()
 
 
-# Index, o que aparece no browser quando se acede ao servidor
-@app.route('/')
-def home():
-    return template(hometemplate)
+def getUserByID(id):
+    qry = User.query(User.id == id)
+    return qry.get()
 
-
-# Funcoes admin <--> fenix
-
-
-@app.route('/admin/campi')
-def listCampus():
-    r = urlfetch.fetch("http://fenix.tecnico.ulisboa.pt/api/fenix/v1/spaces")
-    response = json.loads(r.content)
-    output = "[ " 
-
-    for contained in response:
-        output += "{\"name\":\""+contained["name"]+"\",\"id\":"+contained["id"]+"},"
-    return output[:-1] + "]"
+def getRoomByID(id):
+    qry = Room.query(Room.id == id)
+    return qry.get()
 
 
 def listContainedSpaces(space_id, looking_for):
@@ -66,22 +55,56 @@ def listContainedSpaces(space_id, looking_for):
 
     return output[:-1] + "]"
 
-@app.route('/admin/campus/<campus_id>')
-def listCampusBuildings(campus_id):
-    return listContainedSpaces(campus_id, "BUILDING")
-
-
-@app.route('/admin/building/<building_id>')
-def listBuildingFloors(building_id):
-    return listContainedSpaces(building_id, "FLOOR")
-
-@app.route('/admin/floor/<floor_id>')
-def listFloorRooms(floor_id):
-    return listContainedSpaces(floor_id, "ROOM")
-
 def getFenixRoom(room_id):
     r = urlfetch.fetch("http://fenix.tecnico.ulisboa.pt/api/fenix/v1/spaces/" + room_id)
     return json.loads(r.content)
+
+
+def userLoggedInTemplate(user):
+    return template(usertemplate, user=user)
+
+
+def adminLoggedInTemplate(adminscript):
+    return template(admintemplate, username=adminscript)
+
+
+def viewroom(room, user, _userid, tk=None):
+
+    _users = "[ "
+
+    checkedin = False
+    tickets = Ticket.query().fetch()
+
+    for ticket in tickets:
+        if ticket.room == room.key:
+            _users += '{{"username":"{}"}},'.format(ticket.user.get().username)
+            if _userid != 0 and tk == None:
+                if ticket.user == user.key:
+                    checkedin = True
+
+    # this has to be done, because when checking in, the query sometimes doesn't
+    # retrieve the last ticket (the one added when checking in).
+    if tk != None:
+        checkedin = True
+        if user.username not in _users:
+            _users += '{{"username":"{}"}},'.format(user.username)
+
+
+    return """
+            {{
+                "name":"{}",
+                "campus":"{}",
+                "occupancy":{},
+                "capacity":{},
+                "users":{},
+                "checkedin":{}
+            }}
+        """.format(room.name, room.campus, room.occupancy, room.capacity, _users[:-1]+"]", "true" if checkedin else "false")
+
+
+@app.get('/')
+def home():
+    return template(hometemplate)
 
 
 @app.post('/')
@@ -116,7 +139,58 @@ def login():
         else:
             return "-1"
 
-@app.route('/user/<userid>')
+
+@app.get('/admin')
+def admin():
+    return adminLoggedInTemplate("")
+
+
+@app.get('/admin/campi')
+def listCampus():
+    r = urlfetch.fetch("http://fenix.tecnico.ulisboa.pt/api/fenix/v1/spaces")
+    response = json.loads(r.content)
+    output = "[ "
+
+    for contained in response:
+        output += "{\"name\":\""+contained["name"]+"\",\"id\":"+contained["id"]+"},"
+    return output[:-1] + "]"
+
+
+@app.get('/admin/campus/<campus_id>')
+def listCampusBuildings(campus_id):
+    return listContainedSpaces(campus_id, "BUILDING")
+
+
+@app.get('/admin/building/<building_id>')
+def listBuildingFloors(building_id):
+    return listContainedSpaces(building_id, "FLOOR")
+
+
+@app.get('/admin/floor/<floor_id>')
+def listFloorRooms(floor_id):
+    return listContainedSpaces(floor_id, "ROOM")
+
+
+@app.get('/admin/addroom/<roomid>')
+def addRoom(roomid):
+    if getRoomByID(int(roomid)) != None:
+        return roomview(roomid, 0)
+    try:
+        _room = getFenixRoom(roomid)
+        if (_room["capacity"]["normal"]) == 0:
+            return "-2"
+
+        room = Room(name=_room["name"].encode('utf-8'), id=int(_room["id"]),
+                    capacity=int(_room["capacity"]["normal"]),
+                    campus=_room["topLevelSpace"]["name"].encode('utf-8'),
+                    occupancy=0)
+        room.put()
+        return roomview(roomid, 0)
+    except:
+        return "-1"
+
+
+@app.get('/user/<userid>')
 def user(userid):
     _userid = int(userid)
 
@@ -146,47 +220,6 @@ def listrooms():
     response = response[:-10] + "]"
     return response
 
-
-def getUserByID(id):
-    qry = User.query(User.id == id)
-    return qry.get()
-
-def getRoomByID(id):
-    qry = Room.query(Room.id == id)
-    return qry.get()
-
-
-def viewroom(room, user, _userid, tk=None):
-    _users = "[ "
-
-    checkedin = False
-    tickets = Ticket.query().fetch()
-
-    for ticket in tickets:
-        if ticket.room == room.key:
-            _users += '{{"username":"{}"}},'.format(ticket.user.get().username)
-            if _userid != 0 and tk == None:
-                if ticket.user == user.key:
-                    checkedin = True
-
-    # this has to be done, because when checking in, the query sometimes doesn't
-    # retrieve the last ticket (the one added when checking in).
-    if tk != None:
-        checkedin = True
-        if user.username not in _users:
-            _users += '{{"username":"{}"}},'.format(user.username)
-
-
-    return """
-            {{
-                "name":"{}",
-                "campus":"{}",
-                "occupancy":{},
-                "capacity":{},
-                "users":{},
-                "checkedin":{}
-            }}
-        """.format(room.name, room.campus, room.occupancy, room.capacity, _users[:-1]+"]", "true" if checkedin else "false")
 
 @app.get('/room/<roomid>/<userid>')
 def roomview(roomid, userid):
@@ -247,36 +280,6 @@ def checkout(userid):
         return viewroom(room, user, _userid)
     else:
         return "{}"
-
-@app.route('/admin')
-def admin():
-    return adminLoggedInTemplate("")
-
-@app.route('/admin/addroom/<roomid>')
-def addRoom(roomid):
-    room = getRoomByID(int(roomid))
-    if room != None:
-        return viewroom(room, None, 0)
-    try:
-        _room = getFenixRoom(roomid)
-        if (_room["capacity"]["normal"]) == 0:
-            return "-2"
-
-        room = Room(name=_room["name"].encode('utf-8'), id=int(_room["id"]),
-                    capacity=int(_room["capacity"]["normal"]), 
-                    campus=_room["topLevelSpace"]["name"].encode('utf-8'),
-                    occupancy=0)
-        room.put()
-        return viewroom(room, None, 0)
-    except:
-        return "-1"
-
-def userLoggedInTemplate(user):
-    return template(usertemplate, user=user)
-
-
-def adminLoggedInTemplate(adminscript):
-    return template(admintemplate, username=adminscript)
 
 
 if __name__ == '__main__':
